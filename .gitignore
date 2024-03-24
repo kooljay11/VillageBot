@@ -1,6 +1,9 @@
 # Protected bot token
 config.json
 
+# Ignore the data files
+data/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
