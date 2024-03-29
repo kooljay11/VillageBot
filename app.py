@@ -8,6 +8,7 @@ from copy import deepcopy
 import json
 import discord
 from discord.ext import commands, tasks
+#https://discordpy.readthedocs.io/en/stable/intro.html
 
 client = commands.Bot(command_prefix="/", intents=discord.Intents.all())
 
@@ -15,7 +16,8 @@ client = commands.Bot(command_prefix="/", intents=discord.Intents.all())
 #@tasks.loop(hours=1)
 async def dailyReset():
 
-    newday_message = f'A new day has arrived and the ducks feel refreshed from their slumber. The current season is: {global_info["current_season"]}'
+    #newday_message = f'A new day has arrived and the ducks feel refreshed from their slumber. The current season is: {global_info["current_season"]}'
+    newday_message = f''
     
     # Tell all specified channels about the update
     with open("./data/server_info.json", "r") as file:
@@ -53,4 +55,5 @@ async def main():
 
         await client.start(config['token'])
 
+asyncio.run(main())
 
