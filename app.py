@@ -8,6 +8,7 @@ from copy import deepcopy
 import json
 import discord
 from discord.ext import commands, tasks
+from utilities import reply
 #https://discordpy.readthedocs.io/en/stable/intro.html
 
 client = commands.Bot(command_prefix="/", intents=discord.Intents.all())
@@ -15,7 +16,9 @@ client = commands.Bot(command_prefix="/", intents=discord.Intents.all())
 @tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
 #@tasks.loop(hours=1)
 async def dailyReset():
+    reset()
 
+async def reset():
     #newday_message = f'A new day has arrived and the ducks feel refreshed from their slumber. The current season is: {global_info["current_season"]}'
     newday_message = f''
     
@@ -30,6 +33,15 @@ async def dailyReset():
             except:
                 #print(f'Error trying to execute the new day to channel {channel_id}.')
                 print()
+
+
+@client.tree.command(name="forcereset", description="Dev: Force a daily reset.")
+async def force_reset(interaction: discord.Interaction):
+    user_id = interaction.user.id
+
+    message = f'Not possible yet'
+
+    reply(client, interaction, message)
 
 
 @client.event

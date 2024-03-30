@@ -1,9 +1,10 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 import json
-from copy import deepcopy
+from utilities import get_userinfo, get_default_userinfo, reply
 
-class AppCommands(commands.Cog):
+class Waffle(commands.Cog):
     def __init__(self, client):
         self.client = client
     
@@ -12,7 +13,7 @@ class AppCommands(commands.Cog):
         await self.client.tree.sync()
         print(f'{__name__} loaded successfully!')
 
-    @commands.command(name="waffle")
+    @app_commands.command(name="waffle", description="A waffle a day will make your worries waft away!")
     async def waffle(self, interaction: discord.Interaction):
         user_id = interaction.user.id
         username = self.client.get_user(user_id)
@@ -21,8 +22,7 @@ class AppCommands(commands.Cog):
             global_info = json.load(file)
 
         try:
-            with open(f"./data/user_data/{user_id}.json", "r") as file:
-                user = json.load(file)
+            user = await get_userinfo(user_id)
 
             if not bool(user["waffled_today"]):
                 user["waffled_today"] = True
@@ -38,18 +38,16 @@ class AppCommands(commands.Cog):
             else:
                 message = f'{username} tried to waffle but they already waffled too much today.'
         except:
-            with open("./default_data/user.json", "r") as file:
-                user_info = json.load(file)
-            new_user = deepcopy(user_info)
+            user = await get_default_userinfo()
             message = f'{username} waffled for the first time!'
 
         # Save to database
         with open(f"./data/user_data/{user_id}.json", "w") as file:
             json.dump(user, file, indent=4)
 
-        #await reply(interaction, message)
-        await interaction.response.send_message(message)
+        await reply(self.client, interaction, message)
+        #await interaction.response.send_message(message)
 
 
 async def setup(client):
-    await client.add_cog(AppCommands(client))
+    await client.add_cog(Waffle(client))

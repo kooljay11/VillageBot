@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands, tasks
 
 class Ping(commands.Cog):
@@ -10,10 +11,10 @@ class Ping(commands.Cog):
         await self.client.tree.sync()
         print("Ping.py is ready!")
     
-    @commands.command()
-    async def ping(self, ctx):
+    @app_commands.command(name="ping", description="Sends a test message.")
+    async def ping(self, interaction: discord.Interaction):
         bot_latency = round(self.client.latency * 1000)
-        await ctx.send(f'Pong! {bot_latency} ms.')
+        await interaction.response.send_message(f'Pong! {bot_latency} ms.')
 
 
 async def setup(client):
