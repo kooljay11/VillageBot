@@ -1,0 +1,33 @@
+{
+    "max_waffle_streak_length": 7,
+    "waffle_streak_reward": 1,
+    "waffle_rank": {
+        "Waffle kid": 10,
+        "Waffler": 30,
+        "Waffle Chief": 60,
+        "Waffle Baron": 100,
+        "Waffle Earl": 150,
+        "Waffle Duke": 210,
+        "Waffle Monarch": 280,
+        "Waffle Imperator": 365,
+        "Waffle Prophet": 547,
+        "Lord of the Waffles": 912,
+        "Waffle Diety": 1460,
+        "Waffle Singularity": 3650
+    },
+    "t_exchange_rate": 25,
+    "t_exchange_rate_range": [
+        9,
+        25
+    ],
+    "day_counter": 1,
+    "current_season": "spring",
+    "seasons": {
+        "spring": 3,
+        "summer": 3,
+        "fall": 3,
+        "winter": 3
+    },
+    "help_message": "",
+    "new_day_delay": 0
+}
