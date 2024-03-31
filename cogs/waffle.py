@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import json
-from utilities import get_userinfo, get_default_userinfo, reply
+from utilities import *
 
 class Waffle(commands.Cog):
     def __init__(self, client):
@@ -18,8 +18,7 @@ class Waffle(commands.Cog):
         user_id = interaction.user.id
         username = self.client.get_user(user_id)
 
-        with open("./data/global_info.json", "r") as file:
-            global_info = json.load(file)
+        global_info = await get_globalinfo()
 
         try:
             user = await get_userinfo(user_id)
@@ -42,8 +41,7 @@ class Waffle(commands.Cog):
             message = f'{username} waffled for the first time!'
 
         # Save to database
-        with open(f"./data/user_data/{user_id}.json", "w") as file:
-            json.dump(user, file, indent=4)
+        await save_userinfo(user_id, user)
 
         await reply(self.client, interaction, message)
         #await interaction.response.send_message(message)
