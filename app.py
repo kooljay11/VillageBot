@@ -16,14 +16,29 @@ client = commands.Bot(command_prefix="/", intents=discord.Intents.all())
 
 @tasks.loop(time=[datetime.time(hour=12, minute=0, tzinfo=datetime.timezone.utc)])
 #@tasks.loop(hours=1)
+#@tasks.loop(minutes=10)
 async def dailyReset():
-    reset(client)
+    global_info = await get_globalinfo()
+
+    if global_info["new_day_delay"] > 0:
+        global_info["new_day_delay"] -= 1
+        await save_globalinfo(global_info)
+    else:
+        await reset(client)
+
+@tasks.loop(time=[datetime.time(hour=3, minute=0, tzinfo=datetime.timezone.utc)])
+#@tasks.loop(hours=1)
+#@tasks.loop(minutes=10)
+async def eveningReminder():
+    message = f'You still have not waffled yet today!'
+    await send_daily_reminder(client, "evening_reminder", message)
 
 @client.event
 async def on_ready():
     await client.tree.sync()
     print("Bot is connected to Discord")
     dailyReset.start()
+    eveningReminder.start()
 
 
 async def load():

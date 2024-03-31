@@ -44,7 +44,6 @@ class Waffle(commands.Cog):
         await save_userinfo(user_id, user)
 
         await reply(self.client, interaction, message)
-        #await interaction.response.send_message(message)
 
 
 async def setup(client):

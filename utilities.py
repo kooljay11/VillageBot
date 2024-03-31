@@ -1,5 +1,6 @@
 import json
 from copy import deepcopy
+import os
 
 async def get_userinfo(self_user, target):
     if str(target).isnumeric():
@@ -7,7 +8,7 @@ async def get_userinfo(self_user, target):
     else:
         target_user_id = self_user["nicknames"].get(target, 0)
     
-    user = await get_userinfo(target)
+    user = await get_userinfo(target_user_id)
     
     return user
 
@@ -121,3 +122,25 @@ async def get_waffle_rank(waffles):
             waffle_rank = rank
 
     return waffle_rank
+
+async def get_season(day):
+    global_info = await get_globalinfo()
+
+    dayx = deepcopy(day)
+
+    while True:
+        for season_name, length in global_info["seasons"].items():
+            if dayx <= length:
+                return season_name
+            else:
+                dayx -= length
+
+#Modes: morning_reminder, evening_reminder
+async def send_daily_reminder(client, mode, message):
+    for filename in os.listdir("./data/user_data"):
+        if filename.endswith(".json"):
+            user_id = os.path.splitext(filename)[0]
+            user = await get_userinfo(user_id)
+
+            if bool(user[mode]) and not bool(user["waffled_today"]):
+                await dm(client, user_id, message)

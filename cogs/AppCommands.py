@@ -63,18 +63,18 @@ class AppCommands(commands.Cog):
     #     ]
     
 
-    # # play rock paper scissors
+    # play rock paper scissors
     # @app_commands.command(name="rps")
     # @app_commands.autocomplete(choices=rps_autocomplete)
     # async def rps(self, interaction: discord.Interaction, choices:str):
-        choices = choices.lower()
-        if (choices == 'rock'):
-            counter = 'paper'
-        elif (choices == 'paper'):
-            counter = 'scissors'
-        else:
-            counter = 'rock'
-        await interaction.response.send_message(f'You chose {choices}')
+    #     choices = choices.lower()
+    #     if (choices == 'rock'):
+    #         counter = 'paper'
+    #     elif (choices == 'paper'):
+    #         counter = 'scissors'
+    #     else:
+    #         counter = 'rock'
+    #     await interaction.response.send_message(f'You chose {choices}')
 
 
 

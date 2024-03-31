@@ -8,6 +8,7 @@
     "spins": 0,
     "morning_reminder": false,
     "evening_reminder": false,
+    "chararacter_selected": -1,
     "characters": {},
     "nicknames": {}
 }
