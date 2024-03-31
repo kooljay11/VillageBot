@@ -123,6 +123,23 @@ async def get_waffle_rank(waffles):
 
     return waffle_rank
 
+async def get_next_waffle_rank(waffle_rank):
+    global_info = await get_globalinfo()
+
+    next_waffle_rank = ""
+
+    try:
+        current_waffles = int(global_info["waffle_rank"][waffle_rank])
+    except:
+        current_waffles = 0
+
+    for rank, requirement in global_info["waffle_rank"].items():
+        # Check greater than current quack rank requirement but lower/eq to target quack rank
+        if requirement > current_waffles and (next_waffle_rank == "" or requirement < int(global_info["waffle_rank"][next_waffle_rank])):
+            next_waffle_rank = rank
+
+    return next_waffle_rank
+
 async def get_season(day):
     global_info = await get_globalinfo()
 
