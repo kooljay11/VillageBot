@@ -43,6 +43,14 @@ class Waffle(commands.Cog):
         # Save to database
         await save_userinfo(user_id, user)
 
+        author = interaction.user
+        role = discord.utils.get(author.guild.roles, name="Waffler")
+        if role not in author.roles:
+            if role not in author.guild.roles:
+                await author.guild.create_role(name="Waffler", colour=discord.Colour(0xffff00))
+                role = discord.utils.get(author.guild.roles, name="Waffler")
+            await author.add_roles(role)
+
         await reply(self.client, interaction, message)
 
 
