@@ -48,6 +48,12 @@ async def save_serverinfo(server_info):
     with open("./data/server_info.json", "w") as file:
         json.dump(server_info, file, indent=4)
 
+async def get_poker_slots():
+    with open("./data/pokerslots.json", "r") as file:
+        poker_slots = json.load(file)
+    
+    return poker_slots
+
 async def get_developerlist():
     with open("./data/developers.txt", "r") as file:
         developerlist = [line.rstrip() for line in file]
