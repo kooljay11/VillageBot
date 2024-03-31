@@ -1,10 +1,7 @@
 #https://discord.com/oauth2/authorize?client_id=1220893068018843681&permissions=139855211584&scope=bot
 import os
 import asyncio
-import random
-import math
 import datetime
-from copy import deepcopy
 import json
 import discord
 from discord.ext import commands, tasks

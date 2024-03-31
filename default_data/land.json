@@ -12,6 +12,8 @@
     "plains_land": 0,
     "mountainous_land_available": 0,
     "mountainous_land": 0,
+    "permafrost_land_available": 0,
+    "permafrost_land": 0,
     "water_area": 0,
     "flowing_waterfront_available": 0,
     "flowing_waterfront": 0,
