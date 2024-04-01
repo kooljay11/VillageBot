@@ -22,7 +22,7 @@ class BuyTetra(commands.Cog):
         try:
             user = await get_userinfo(user_id)
         except:
-            await reply(self.client, interaction, "You have not waffled yet.")
+            await reply(self.client, interaction, "You aren't part of the game yet! Do /waffle first.")
             return
 
         # Make sure the player has enough waffles

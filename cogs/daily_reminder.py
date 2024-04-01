@@ -25,7 +25,7 @@ class DailyReminder(commands.Cog):
         try:
             user = await get_userinfo(user_id)
         except:
-            await reply(interaction, "You have not waffled yet.")
+            await reply(interaction, "You aren't part of the game yet! Do /waffle first.")
             return
         
         user[mode.value] = not bool(user[mode.value])
