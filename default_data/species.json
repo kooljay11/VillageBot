@@ -18,6 +18,9 @@
     "bonus_max_capacity": 0,
     "max_capacity_multiplier": 1,
     "max_bonus_max_capacity": 9999,
+    "max_hunger": 1,
+    "energy_per_hunger": 1,
+    "equipment_slots": [],
     "attr": {
         "bonus_CON": 0,
         "CON_multiplier": 1,
