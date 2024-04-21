@@ -50,8 +50,9 @@ class PokerSlotMachine(commands.Cog):
     
 
     async def isFlush(hand):
+        
 
-        return [False, hand]
+        return False
 
 # 1 pair = 1/1.37 * 1t
 # 2 pair = 1/20 * 3 spins
