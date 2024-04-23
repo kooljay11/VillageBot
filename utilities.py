@@ -18,6 +18,41 @@ async def get_userinfo(user_id):
     
     return user
 
+async def get_species(species_name):
+    with open(f"./data/species/{species_name}.json", "r") as file:
+        overrides = json.load(file)
+
+    default_species = await get_default_species()
+    species = default_species
+    
+    # Only add non tiered attributes to the species
+    for attr, value in default_species.items():
+        if attr not in ["life_stages", "attr"]:
+            species[attr] = value
+
+    # Replace all non tiered attributes with species specific overrides
+    for attr, value in overrides.items():
+        if attr not in ["life_stages", "attr"]:
+            species[attr] = value
+
+    # Give the species all of the life_stages attributes
+    for attr, value in overrides["life_stages"].items():
+        for attr_stat, stat_value in value.items():
+            species["life_stages"][attr][attr_stat] = stat_value
+
+    # Give the species all of the attr attributes
+    for attr, value in overrides["attr"].items():
+        for attr_stat, stat_value in value.items():
+            species["attr"][attr][attr_stat] = stat_value
+    
+    return species
+
+async def get_default_species():
+    with open("./default_data/species.json", "r") as file:
+        species = json.load(file)
+    
+    return species
+
 async def save_userinfo(user_id, user):
     with open(f"./data/user_data/{user_id}.json", "w") as file:
         json.dump(user, file, indent=4)
@@ -97,15 +132,15 @@ async def reply(client, interaction, message):
             first_reply_sent = False
             channel = await client.fetch_channel(interaction.channel_id)
             for x in range(len(message_fragments)):
-                if len(message_to_send) + len(message_fragments[x-1]) < 2000:
-                    message_to_send += "\n" + message_fragments[x-1]
+                if len(message_to_send) + len(message_fragments[x]) < 2000:
+                    message_to_send += "\n" + message_fragments[x]
                 else:
                     if not first_reply_sent:
                         await interaction.response.send_message(message_to_send)
                         first_reply_sent = True
                     else:
                         await channel.send(message_to_send)
-                    message_to_send = message_fragments[x-1]
+                    message_to_send = message_fragments[x]
             
             if len(message_to_send) > 0:
                 if len(message_to_send) < 2000:

@@ -21,6 +21,7 @@
         25
     ],
     "day_counter": 1,
+    "character_counter": 0,
     "current_season": "spring",
     "seasons": {
         "spring": 3,

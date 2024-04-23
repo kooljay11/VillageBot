@@ -1,6 +1,7 @@
 {
     "id": -1,
-    "characters": [],
+    "burg_id": -1,
+    "character_ids": [],
     "free_buildings": [],
     "stashes": [],
     "settlements": [],

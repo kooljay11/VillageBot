@@ -13,26 +13,72 @@
     "max_energy": 0,
     "capacity": 0,
     "max_capacity": 0,
+    "hunger": 0,
     "pregnancy_counter": 0,
     "attr": {
-        "CON": 0,
-        "max_CON": 0,
-        "WIL": 0,
-        "max_WIL": 0,
-        "ARM": 0,
-        "max_ARM": 0,
-        "LEG": 0,
-        "max_LEG": 0,
-        "REF": 0,
-        "max_REF": 0,
-        "INT": 0,
-        "max_INT": 0,
-        "SOC": 0,
-        "max_SOC": 0,
-        "SPR": 0,
-        "max_SPR": 0,
-        "MAN": 0,
-        "max_MAN": 0
+        "CON": {
+            "value": 0,
+            "max": 0,
+            "boost": 0,
+            "xp": 0,
+            "max_xp": 0
+        },
+        "WIL": {
+            "value": 0,
+            "max": 0,
+            "boost": 0,
+            "xp": 0,
+            "max_xp": 0
+        },
+        "ARM": {
+            "value": 0,
+            "max": 0,
+            "boost": 0,
+            "xp": 0,
+            "max_xp": 0
+        },
+        "LEG": {
+            "value": 0,
+            "max": 0,
+            "boost": 0,
+            "xp": 0,
+            "max_xp": 0
+        },
+        "REF": {
+            "value": 0,
+            "max": 0,
+            "boost": 0,
+            "xp": 0,
+            "max_xp": 0
+        },
+        "INT": {
+            "value": 0,
+            "max": 0,
+            "boost": 0,
+            "xp": 0,
+            "max_xp": 0
+        },
+        "SOC": {
+            "value": 0,
+            "max": 0,
+            "boost": 0,
+            "xp": 0,
+            "max_xp": 0
+        },
+        "SPR": {
+            "value": 0,
+            "max": 0,
+            "boost": 0,
+            "xp": 0,
+            "max_xp": 0
+        },
+        "MAN": {
+            "value": 0,
+            "max": 0,
+            "boost": 0,
+            "xp": 0,
+            "max_xp": 0
+        }
     },
     "skills": {},
     "language": {},
