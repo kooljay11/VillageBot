@@ -53,6 +53,68 @@ async def get_default_species():
     
     return species
 
+async def print_quick_character(character):
+    message = f'{character["name"]} [{character["id"]}] - {character["gender"]} {character["species"]} :zap: {character["energy"]}/{character["max_energy"]} :heart: {character["attr"]["CON"]["value"]}/{character["attr"]["CON"]["max"]} :blue_heart: {character["attr"]["WIL"]["value"]}/{character["attr"]["WIL"]["max"]} :muscle: {character["attr"]["ARM"]["value"]}/{character["attr"]["ARM"]["max"]} :leg: {character["attr"]["LEG"]["value"]}/{character["attr"]["LEG"]["max"]} :fast_forward: {character["attr"]["REF"]["value"]}/{character["attr"]["REF"]["max"]} :brain: {character["attr"]["INT"]["value"]}/{character["attr"]["INT"]["max"]} :speaking_head: {character["attr"]["SOC"]["value"]}/{character["attr"]["SOC"]["max"]}'
+
+    if len(character["status"]) > 0:
+        message += f'\n\tStatus: {', '.join(character["status"])}'
+    return message
+
+async def print_full_character(character):
+    message = f''
+
+    return message
+
+async def get_character(char_id):
+    for filename in os.listdir("./data/user_data"):
+        if filename.endswith(".json"):
+            user_id = os.path.splitext(filename)[0]
+            user = await get_userinfo(user_id)
+
+            for character in user["characters"]:
+                if character["id"] == char_id:
+                    return character
+
+    return {}
+
+
+async def get_selected_character(user):
+    for character in user["characters"]:
+        if character["id"] == user["character_selected"]:
+            return character
+
+    return {}
+
+
+
+async def get_character_with_defaults(character):
+    overrides = character
+    default_character = await get_default_character()
+
+    full_character = default_character
+# Only add non tiered attributes to the species
+    for attr, value in default_character.items():
+        if attr not in ["life_stages", "attr"]:
+            full_character[attr] = value
+
+    # Replace all non tiered attributes with species specific overrides
+    for attr, value in overrides.items():
+        if attr not in ["life_stages", "attr"]:
+            full_character[attr] = value
+
+    # Give the species all of the attr attributes
+    for attr, value in overrides["attr"].items():
+        for attr_stat, stat_value in value.items():
+            full_character["attr"][attr][attr_stat] = stat_value
+    
+    return full_character
+
+async def get_default_character():
+    with open("./default_data/character.json", "r") as file:
+        character = json.load(file)
+    
+    return character
+
 async def save_userinfo(user_id, user):
     with open(f"./data/user_data/{user_id}.json", "w") as file:
         json.dump(user, file, indent=4)

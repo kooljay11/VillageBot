@@ -15,6 +15,20 @@
         "Waffle Diety": 1460,
         "Waffle Singularity": 3650
     },
+    "waffle_attr_boosts": {
+        "Waffle kid": 1,
+        "Waffler": 2,
+        "Waffle Chief": 3,
+        "Waffle Baron": 4,
+        "Waffle Earl": 5,
+        "Waffle Duke": 6,
+        "Waffle Monarch": 7,
+        "Waffle Imperator": 8,
+        "Waffle Prophet": 9,
+        "Lord of the Waffles": 10,
+        "Waffle Diety": 11,
+        "Waffle Singularity": 12
+    },
     "t_exchange_rate": 25,
     "t_exchange_rate_range": [
         9,
@@ -22,6 +36,9 @@
     ],
     "day_counter": 1,
     "character_counter": 0,
+    "max_active_characters": 1,
+    "max_waitlist_characters": 1,
+    "max_total_characters": 20,
     "current_season": "spring",
     "seasons": {
         "spring": 3,

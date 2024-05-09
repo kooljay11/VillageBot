@@ -46,6 +46,12 @@ class UserInfo(commands.Cog):
             if user["poker_spins"] > 0:
                 message += f'\n\nPoker slot machine spins available: {user["poker_spins"]}'
 
+            message += f'\n\nCharacters: '
+            for character in user["characters"]:
+                char_message = await print_quick_character(character)
+                message += f'\n{char_message}'
+                
+
         except:
             message = 'Error while fetching user information.'
 

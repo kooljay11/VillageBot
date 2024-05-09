@@ -8,7 +8,7 @@
     "poker_spins": 0,
     "morning_reminder": false,
     "evening_reminder": false,
-    "chararacter_selected": -1,
+    "character_selected": -1,
     "characters": {},
     "nicknames": {}
 }
