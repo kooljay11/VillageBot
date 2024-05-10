@@ -57,6 +57,20 @@ class UserInfo(commands.Cog):
 
         await reply(self.client, interaction, message)
 
+    @app_commands.command(name="charinfo", description="Check your character's information.")
+    async def char_info(self, interaction: discord.Interaction, chararacter_id: str = ""):
+        if user_id == "":
+            user_id = interaction.user.id
+
+        # Make sure this player exists in user_info
+        try:
+            user = await get_userinfo(user_id)
+        except:
+            await reply(self.client, interaction, "That user has not waffled yet.")
+            return
+
+        message = f''
+        await reply(self.client, interaction, message)
 
 async def setup(client):
     await client.add_cog(UserInfo(client))
