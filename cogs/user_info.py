@@ -57,10 +57,19 @@ class UserInfo(commands.Cog):
 
         await reply(self.client, interaction, message)
 
+
+
+    async def char_mode_autocomplete(self, interaction: discord.Interaction, current: str,) -> list[app_commands.Choice[str]]:
+        choices = ['quick', 'full']
+        return [
+            app_commands.Choice(name=choice, value=choice)
+            for choice in choices if current.lower() in choice.lower()
+        ]
+
     @app_commands.command(name="charinfo", description="Check your character's information.")
-    async def char_info(self, interaction: discord.Interaction, chararacter_id: str = ""):
-        if user_id == "":
-            user_id = interaction.user.id
+    @app_commands.autocomplete(mode=char_mode_autocomplete)
+    async def char_info(self, interaction: discord.Interaction, chararacter_id: int = -1, mode: str = "quick"):
+        user_id = interaction.user.id
 
         # Make sure this player exists in user_info
         try:
@@ -68,8 +77,25 @@ class UserInfo(commands.Cog):
         except:
             await reply(self.client, interaction, "That user has not waffled yet.")
             return
+        
+        #Get character
+        try:
+            if chararacter_id < 0:
+                #Get the user's selected character
+                character = await get_selected_character(user)
+            else:
+                character = await get_character(chararacter_id)
+        except:
+            await reply(self.client, interaction, "Character not found.")
+            return
+        
+        if mode == "quick":
+            message = await print_quick_character(character)
+        elif mode == "full":
+            message = await print_full_character(character)
+        else:
+            message = f'Mode incorrectly selected.'
 
-        message = f''
         await reply(self.client, interaction, message)
 
 async def setup(client):
