@@ -30,6 +30,8 @@
             "WIL_monthly_multiplier": 1
         }
     },
+    "DNA_length": 200,
+    "DNA_bases": ["A", "T", "G", "C"],
     "max_energy": 0,
     "max_energy_regeneration": 0,
     "max_energy_regeneration_multiplier": 0,

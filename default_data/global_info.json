@@ -47,5 +47,34 @@
         "winter": 3
     },
     "help_message": "",
-    "new_day_delay": 0
+    "new_day_delay": 0,
+    "tool_quality_levels": {
+        "broken": 0.05,
+        "cracked": 0.15,
+        "rusty": 0.45,
+        "crude": 0.75,
+        "average": 1,
+        "reinforced": 1.5,
+        "strong": 2,
+        "lordly": 2.5,
+        "masterwork": 3,
+        "legendary": 4,
+        "mythic": 5,
+        "godly": 6
+    },
+    "material_durability_modifiers": {
+        "stone": 90,
+        "iron": 400,
+        "copper": 2000,
+        "bronze": 4400,
+        "bysteel": 4000,
+        "grimsteel": 4000,
+        "moxsteel": 12000,
+        "chromsteel": 30000,
+        "luxsteel": 54000,
+        "titansteel": 84000,
+        "causten": 120000,
+        "radite": 162000,
+        "ebonite": 210000
+    }
 }

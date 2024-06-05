@@ -1,0 +1,15 @@
+{
+    "item_id": -1,
+    "category": "material",
+    "tool_type": "",
+    "wearable_slots": {},
+    "base_material_cost": [],
+    "allowable_material_types": [],
+    "base_%_chance_breaking": [],
+    "weight": 0,
+    "volume": 0,
+    "has_quality": true,
+    "harvesting_tool": true,
+    "fire_resistance": 0,
+    "explosion_resistance": 0
+}

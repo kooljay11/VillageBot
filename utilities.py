@@ -112,8 +112,10 @@ async def print_full_character(character):
     #Equipment+Inventory
     message += f'\n\n**Equipment: **'
     equipment = []
-    for item in character["equipment"]:
-        slots = ', '.join(item["slots"])
+    for equiped_item in character["equipment"]:
+        item = await get_item_type(equiped_item["item"]["item_id"])
+        slots_option = equiped_item["option"]
+        slots = ', '.join(item["wearable_slots"].get(slots_option))
         equipment.append(f'{item["name"]} ({slots})')
     message += f'{', '.join(equipment)}'
 
@@ -134,6 +136,32 @@ async def print_full_character(character):
 async def years(months):
     return [int(months / 12), months % 12]
 
+async def get_item_type(item_id):
+    with open(f"./data/items/{item_id}.json", "r") as file:
+        item_type = json.load(file)
+    
+    return item_type
+
+async def get_waitlist():
+    with open("./data/waitlist.json", "r") as file:
+        waitlist = json.load(file)
+    
+    return waitlist
+
+async def save_waitlist(waitlist):
+    with open("./data/waitlist.json", "w") as file:
+        json.dump(waitlist, file, indent=4)
+
+async def get_ward(ward_id):
+    with open(f"./data/locations/wards/{ward_id}.json", "r") as file:
+        ward = json.load(file)
+    
+    return ward
+
+async def save_ward(ward_id, ward):
+    with open(f"./data/locations/wards/{ward_id}.json", "w") as file:
+        json.dump(ward, file, indent=4)
+
 async def get_character(char_id):
     for filename in os.listdir("./data/user_data"):
         if filename.endswith(".json"):
@@ -146,6 +174,12 @@ async def get_character(char_id):
 
     return {}
 
+async def get_user_character(user, char_id):
+    for character in user["characters"]:
+        if character["id"] == char_id:
+            return character
+
+    return {}
 
 async def get_selected_character(user):
     for character in user["characters"]:
@@ -153,8 +187,6 @@ async def get_selected_character(user):
             return character
 
     return {}
-
-
 
 async def get_character_with_defaults(character):
     overrides = character

@@ -4,6 +4,7 @@
     "gender": "",
     "species": "",
     "description": "",
+    "DNA": "",
     "age_months": 0,
     "parent_ids": [],
     "children_ids": [],
