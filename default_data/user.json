@@ -9,6 +9,10 @@
     "morning_reminder": false,
     "evening_reminder": false,
     "character_selected": -1,
-    "characters": {},
-    "nicknames": {}
+    "characters": [],
+    "nicknames": {
+        "ward": [],
+        "character": [],
+        "user": []
+    }
 }

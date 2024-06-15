@@ -1,8 +1,13 @@
 {
-    "item_id": -1,
+    "id": -1,
+    "name": "",
     "amount": 0,
     "material": "",
+    "state": "",
     "quality": 0,
+    "purity": "",
+    "size": "",
+    "mixture": {},
     "sharp": false,
     "total_volume": 0,
     "total_weight": 0

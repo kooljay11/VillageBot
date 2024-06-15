@@ -158,8 +158,8 @@ async def get_ward(ward_id):
     
     return ward
 
-async def save_ward(ward_id, ward):
-    with open(f"./data/locations/wards/{ward_id}.json", "w") as file:
+async def save_ward(ward):
+    with open(f"./data/locations/wards/{ward["id"]}.json", "w") as file:
         json.dump(ward, file, indent=4)
 
 async def get_character(char_id):
@@ -225,6 +225,119 @@ async def get_default_userinfo():
         user = json.load(file)
     
     return user
+
+async def get_task_info(task_name, sub_task=""):
+    task_list = await get_tasks()
+
+    try:
+        task_info = await get_default_task_info()
+        
+        for key, value in task_list[task_name].items():
+            task_info[key] = value
+
+        if sub_task != "":
+            for key, value in task_info[sub_task].items():
+                task_info[key] = value
+
+        return task_info
+    except:
+        return ""
+    
+async def get_default_task_info():
+    with open("./default_data/task_info.json", "r") as file:
+        task_info = json.load(file)
+    
+    return task_info
+
+async def get_tasks():
+    with open("./data/tasks.json", "r") as file:
+        task_info = json.load(file)
+    
+    return task_info
+
+async def get_material(material_name):
+    with open(f"./data/materials/{material_name}.json", "r") as file:
+        material = json.load(file)
+    
+    return material
+
+async def get_item_in_equip(character, item_name):
+    for item_stack in character["equipment"]:
+        if item_stack["name"] == item_name:
+            return item_stack
+    
+    return {}
+
+async def get_item_in_inv(character, item_name):
+    for item_stack in character["inventory"]:
+        if item_stack["name"] == item_name:
+            return item_stack
+    
+    return {}
+
+async def get_default_item_type():
+    with open(f"./default_data/item_type.json", "r") as file:
+        item_type = json.load(file)
+    
+    return item_type
+
+async def get_item_by_name_state(item_name, item_state):
+    item = await get_item_by_name(item_name)
+
+    #Start with default item type file
+    default_item_type = await get_default_item_type()
+    full_item = default_item_type
+
+    #Material info → Item info
+    material_type = item.get("material_type", "")
+    if material_type != "":
+        #Add the material's properties each value
+        for key, value in material_type.items():
+            full_item[key] = value
+
+        #Add item's values one by one
+        for key, value in item.items():
+            full_item[key] = value
+
+    #IF item_state not == "" → State's Material info → State's info
+    if item_state != "":
+        item_state_info = item.get(item_state, {})
+        material_type = item_state_info.get("material_type", "")
+        if material_type != "":
+            material = await get_material(material_type)
+            #Add material's values one by one
+            for key, value in material.items():
+                full_item[key] = value
+        
+        #Add state's values one by one
+        for key, value in item_state_info.items():
+            full_item[key] = value
+    
+    return full_item
+
+async def get_item_by_name(item_name):
+    for filename in os.listdir("./data/items"):
+        if filename.endswith(".json"):
+            item_id = os.path.splitext(filename)[0]
+            item = await get_item_by_id(item_id)
+
+            if item["name"] == item_name:
+                return item
+
+    return {}
+
+async def get_item_by_id(item_id):
+    with open(f"./data/items/{item_id}.json", "r") as file:
+        task_info = json.load(file)
+    
+    return task_info
+
+async def get_item_available_in_ward(ward, item_name):
+
+    return False
+
+async def get_building(ward, building_id):
+    return ward["buildings"][building_id]
 
 async def get_globalinfo():
     with open("./data/global_info.json", "r") as file:
@@ -356,6 +469,18 @@ async def get_season(day):
             else:
                 dayx -= length
 
+async def get_skill_mod(character, skills):
+    skill_lvls = []
+    for skill_name in skills:
+        skill_lvls.append(character["skills"].get(skill_name, 0))
+    return 1 / (min(skill_lvls)/2 + 1)
+    
+async def get_atr_mod(character, attributes):
+    ATR_lvls = []
+    for ATR_name in attributes:
+        ATR_lvls.append(character["attr"][ATR_name].get("value", 0))
+    return 1 / (min(ATR_lvls)/4 + 1)
+
 #Modes: morning_reminder, evening_reminder
 async def send_daily_reminder(client, mode, message):
     for filename in os.listdir("./data/user_data"):
@@ -365,3 +490,52 @@ async def send_daily_reminder(client, mode, message):
 
             if bool(user[mode]) and not bool(user["waffled_today"]):
                 await dm(client, user_id, message)
+
+async def add_to_queue(user_id, char_id, action, item, ward_id, amount = 1, time = 1, dump_id = [], friend_char_id = -1):
+    #If doing a task with someone else then look for that person in the taskqueue
+    if friend_char_id >= 0:
+        ward = await get_ward(ward_id)
+
+        for task_group in ward["task_queue"]:
+            if task_group["task"] == action and task_group["item"] == item and task_group["time"] == time and len(task_group["members"]) < task_group["member_limit"]:
+                for member in task_group["members"]:
+                    if member["char_id"] == friend_char_id:
+                        #Add member to task queue
+                        task_group["members"].append({
+                            "user_id": user_id,
+                            "char_id": char_id,
+                            "amount": amount
+                        })
+                        #Save ward
+                        await save_ward(ward)
+                        return
+            
+    #If doing a task alone, then create a new task group
+    else:
+        default_task_group = await get_default_task_group()
+        task_group = default_task_group
+
+        member = {
+            "user_id": user_id,
+            "char_id": char_id,
+            "amount": amount
+        }
+        task_group["members"].append(member)
+        
+        task_group["task"] = action
+        task_group["item"] = item
+        task_group["time"] = time
+        task_group["dump_id"] = dump_id
+
+        task_info = await get_task_info(action, item)
+
+        task_group["member_limit"] = task_info["member_limit"]
+        
+        #Add to the task queue
+        ward = await get_ward(ward_id)
+        ward["task_queue"].append(task_group)
+
+        #Save changes
+        await save_ward(ward)
+
+    return
