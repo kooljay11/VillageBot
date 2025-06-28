@@ -16,6 +16,7 @@ class ForceReset(commands.Cog):
 
 
     @app_commands.command(name="forcereset", description="Developer: Force a daily reset.")
+    @app_commands.default_permissions(administrator=True)
     async def force_reset(self, interaction: discord.Interaction):
         user_id = interaction.user.id
 

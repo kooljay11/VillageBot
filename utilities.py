@@ -2,7 +2,8 @@ import json
 from copy import deepcopy
 import os
 
-async def get_userinfo(self_user, target):
+# Cannot name get_userinfo due to no function overloading in Python
+async def get_userinfo_by_nick(self_user, target):
     if str(target).isnumeric():
         target_user_id = target
     else:
@@ -15,8 +16,62 @@ async def get_userinfo(self_user, target):
 async def get_userinfo(user_id):
     with open(f"./data/user_data/{user_id}.json", "r") as file:
         user = json.load(file)
+
+    # Get the default userinfo
+    default_user = await get_default_userinfo()
+
+    for attr, value in default_user.items():
+        if user.get(attr, None) is None:
+            user[attr] = default_user[attr]
+            await save_userinfo(user_id, user)
     
     return user
+
+async def save_userinfo(user_id, user):
+    with open(f"./data/user_data/{user_id}.json", "w") as file:
+        json.dump(user, file, indent=4)
+
+async def get_default_userinfo():
+    with open("./default_data/user.json", "r") as file:
+        user = json.load(file)
+    
+    return user
+
+async def create_user_profile(client, user_id):
+    default_user = await get_default_userinfo()
+    default_user["nicknames"][str(await client.fetch_user(user_id))] = user_id
+
+    await save_userinfo(user_id, default_user)
+
+    return default_user
+
+
+async def get_nickname(self_user, target_id):
+    for nickname, id in self_user["nicknames"].items():
+        if id == target_id:
+            return nickname
+    
+    return ""
+
+async def get_id_nickname(client, self_user, target: str):
+    #print(f'Getting id and nick for {target}')
+    target = str(target)
+    if target.isnumeric():
+        #print(f'target: {target}')
+        #print(f'int(target): {int(target)}')
+        target_id = int(target)
+        #print(f'target_id: {target_id}')
+        target_name = await get_nickname(self_user, target_id)
+        #print(f'target_name 1: {target_name}')
+        if target_name == "":
+            target_name = str(await client.fetch_user(target_id))
+            #print(f'target_name 2: {target_name}')
+    else:
+        target_id = int(self_user["nicknames"][target])
+        #print(f'target: {target}')
+        target_name = target
+    
+    return {"id": target_id, "name": target_name}
 
 async def get_species(species_name):
     with open(f"./data/species/{species_name}.json", "r") as file:
@@ -216,16 +271,6 @@ async def get_default_character():
     
     return character
 
-async def save_userinfo(user_id, user):
-    with open(f"./data/user_data/{user_id}.json", "w") as file:
-        json.dump(user, file, indent=4)
-
-async def get_default_userinfo():
-    with open("./default_data/user.json", "r") as file:
-        user = json.load(file)
-    
-    return user
-
 async def get_task_info(task_name, sub_task=""):
     task_list = await get_tasks()
 
@@ -355,6 +400,12 @@ async def get_serverinfo():
     
     return server_info
 
+async def get_default_server():
+    with open("./default_data/server_info.json", "r") as file:
+        server = json.load(file)
+    
+    return server
+
 async def save_serverinfo(server_info):
     with open("./data/server_info.json", "w") as file:
         json.dump(server_info, file, indent=4)
@@ -370,6 +421,50 @@ async def get_developerlist():
         developerlist = [line.rstrip() for line in file]
     
     return developerlist
+
+async def send_message(client, server_id, message, silent: bool = False):
+    try:
+        server_info = await get_serverinfo()
+        await send_channel_message(client, int(server_info[str(server_id)]["reminder_channel_id"]), message, silent)
+    except:
+        #print(f'Server {server_id} not found. Message: {message}')
+        await send_console_message(client, f'Server {server_id} not found. Message: {message}', silent)
+        return
+
+async def send_channel_message(client, channel_id: int, message, silent: bool = False):
+    try:
+        channel = await client.fetch_channel(channel_id)
+
+        if len(message) <= 2000:
+            await channel.send(message, silent = silent)
+        else:
+            new_message = deepcopy(message)
+            message_fragments = new_message.split("\n")
+            message_to_send = ""
+            for x in range(len(message_fragments)):
+                if len(message_to_send) + len(message_fragments[x-1]) < 2000:
+                    message_to_send += "\n" + message_fragments[x-1]
+                else:
+                    await channel.send(message_to_send, silent = silent)
+                    message_to_send = message_fragments[x-1]
+            
+            if len(message_to_send) > 0:
+                if len(message_to_send) < 2000:
+                    await channel.send(message_to_send, silent = silent)
+                else:
+                    await channel.send('Last message fragment too long to send. Ask developer to include more linebreaks in output.', silent = silent)
+    except:
+        #print(f'Channel {channel_id} not found. Message: {message}')
+        await send_console_message(client, f'Channel {channel_id} not found. Message: {message}', silent)
+        return
+
+async def send_console_message(client, message, silent: bool = False):
+    try:
+        global_info = await get_globalinfo()
+    except:
+        print(f'Console channel not set in global_info.json')
+
+    await send_channel_message(client, global_info["console_channel_id"], message)
 
 async def dm(client, user_id, message):
     try:
@@ -397,10 +492,10 @@ async def dm(client, user_id, message):
         print(f'{user_id} not found. Message: {message}')
         return
 
-async def reply(client, interaction, message):
+async def reply(client, interaction, message, silent: bool = False):
     try: 
         if len(message) <= 2000:
-            await interaction.response.send_message(message)
+            await interaction.response.send_message(message, silent = silent)
         else:
             new_message = deepcopy(message)
             message_fragments = new_message.split("\n")
@@ -412,18 +507,18 @@ async def reply(client, interaction, message):
                     message_to_send += "\n" + message_fragments[x]
                 else:
                     if not first_reply_sent:
-                        await interaction.response.send_message(message_to_send)
+                        await interaction.response.send_message(message_to_send, silent = silent)
                         first_reply_sent = True
                     else:
-                        await channel.send(message_to_send)
+                        await channel.send(message_to_send, silent = silent)
                     message_to_send = message_fragments[x]
             
             if len(message_to_send) > 0:
                 if len(message_to_send) < 2000:
                     if not first_reply_sent:
-                        await interaction.response.send_message(message_to_send)
+                        await interaction.response.send_message(message_to_send, silent = silent)
                     else:
-                        await channel.send(message_to_send)
+                        await channel.send(message_to_send, silent = silent)
                 else:
                     await reply(interaction, 'Last message fragment too long to send. Ask developer to include more linebreaks in output.')
     except:

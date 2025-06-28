@@ -1,0 +1,9 @@
+{
+    "id": 0,
+    "name": "",
+    "4L_abbr": "",
+    "reminder_channel_id": 0,
+    "updates_channel_id": 0,
+    "commands_channel_ids": [],
+    "admin_commands_channel_id": 0
+}

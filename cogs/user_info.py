@@ -67,7 +67,12 @@ class UserInfo(commands.Cog):
         ]
 
     @app_commands.command(name="charinfo", description="Check your character's information.")
-    @app_commands.autocomplete(mode=char_mode_autocomplete)
+    #@app_commands.autocomplete(mode=char_mode_autocomplete)
+    @app_commands.describe(mode="Mode")
+    @app_commands.choices(mode=[
+        app_commands.Choice(name="Quick", value="quick"),
+        app_commands.Choice(name="Full", value="full")
+    ])
     async def char_info(self, interaction: discord.Interaction, chararacter_id: int = -1, mode: str = "quick"):
         user_id = interaction.user.id
 
