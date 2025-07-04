@@ -37,11 +37,13 @@
     "max_energy_regeneration_multiplier": 0,
     "pregnancy_length": 0,
     "maternity_length": 0,
-    "bonus_max_capacity": 0,
-    "max_capacity_multiplier": 1,
-    "max_bonus_max_capacity": 9999,
-    "max_hunger": 1,
+    "base_max_weight_capacity": 10,
+    "weight_capacity_per_ARM": 5,
+    "weight_capacity_per_LEG": 5,
+    "max_hunger": 6,
     "energy_per_hunger": 1,
+    "max_protein": 6,
+    "energy_per_protein": 1,
     "equipment_slots": [],
     "attr": {
         "CON": {

@@ -4,6 +4,9 @@ config.json
 # Ignore the data files
 data/
 
+# Ignore the archives files
+archive/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

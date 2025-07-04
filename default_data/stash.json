@@ -1,0 +1,17 @@
+{
+    "type": "public",
+    "possible_types": ["public", "private", "communal"],
+    "owner": {},
+    "members": [],
+    "waitlist": [],
+    "template_member": {
+        "char_id": 2,
+        "user_id": 107886996365508608,
+        "theft_alert": true,
+        "supporters": [],
+        "critics": []
+    },
+    "inventory": [],
+    "capacity": 0,
+    "max_capacity": 0
+}

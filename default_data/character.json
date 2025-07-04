@@ -17,6 +17,10 @@
     "max_capacity": 0,
     "hunger": 0,
     "max_hunger": 0,
+    "energy_per_hunger": 0,
+    "protein": 0,
+    "max_protein": 0,
+    "energy_per_protein": 1,
     "pregnancy_counter": 0,
     "attr": {
         "CON": {

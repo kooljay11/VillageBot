@@ -1,5 +1,5 @@
 {
-    "id": -1,
+    "nick_name": "",
     "name": "",
     "amount": 0,
     "material": "",
@@ -9,6 +9,8 @@
     "size": "",
     "mixture": {},
     "sharp": false,
+    "durability": 0,
+    "max_durability": 0,
     "total_volume": 0,
     "total_weight": 0
 }

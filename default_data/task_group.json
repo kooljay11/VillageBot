@@ -1,10 +1,10 @@
 {
     "task": "",
     "item": "",
-    "ward_id": -1,
     "time": 1,
     "dump_id": [],
     "members": [],
-    "member_limit": 0
+    "member_limit": 0,
+    "materials left": {}
 }
 

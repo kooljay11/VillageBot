@@ -48,6 +48,7 @@
     },
     "help_message": "",
     "new_day_delay": 0,
+    "random_yield_multiplier": [0.7, 1.3],
     "tool_quality_levels": {
         "broken": 0.05,
         "cracked": 0.15,
@@ -63,10 +64,13 @@
         "godly": 6
     },
     "material_durability_modifiers": {
+        "silver": 35,
+        "gold": 40,
         "stone": 90,
         "iron": 400,
         "copper": 2000,
         "bronze": 4400,
+        "brass": 4400,
         "bysteel": 4000,
         "grimsteel": 4000,
         "moxsteel": 12000,

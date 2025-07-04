@@ -1,0 +1,254 @@
+{
+    "seed_biome": "",
+    "biomes": {
+        "template": {
+            "spring": 5, 
+            "summer": 5, 
+            "fall": 5, 
+            "winter": 5, 
+            "wet": 0, 
+            "dry": 0, 
+            "monsoon": 0,
+            "sub_biomes": ["plain", "forest", "hill", "coast", "beach", "barren", "desert", "deep_forest", "permafrost", "ice"],
+            "connecting_biomes": ["deciduous", "taiga", "steppe", "montane", "desert", "tundra", "polar_desert", "rain_forest", "savanna"],
+            "travel_energy_enter": 1,
+            "travel_energy_exit": 0
+        },
+        "deciduous": {
+            "spring": 5, 
+            "summer": 5, 
+            "fall": 5, 
+            "winter": 5, 
+            "wet": 0, 
+            "dry": 0, 
+            "monsoon": 0,
+            "sub_biomes": ["plain", "forest", "hill", "coast", "beach"],
+            "connecting_biomes": ["taiga", "steppe", "montane", "desert", "rain_forest"],
+            "travel_energy_enter": 1,
+            "travel_energy_exit": 0
+        },
+        "taiga": {
+            "spring": 3, 
+            "summer": 4, 
+            "fall": 3, 
+            "winter": 10, 
+            "wet": 0, 
+            "dry": 0, 
+            "monsoon": 0,
+            "sub_biomes": ["plain", "forest", "hill", "coast", "beach"],
+            "connecting_biomes": ["deciduous", "steppe", "tundra"],
+            "travel_energy_enter": 1,
+            "travel_energy_exit": 0
+        },
+        "steppe": {
+            "spring": 5, 
+            "summer": 5, 
+            "fall": 5, 
+            "winter": 5, 
+            "wet": 0, 
+            "dry": 0, 
+            "monsoon": 0,
+            "sub_biomes": ["plain", "hill", "coast", "beach"],
+            "connecting_biomes": ["deciduous", "taiga", "montane", "desert", "savanna"],
+            "travel_energy_enter": 1,
+            "travel_energy_exit": 0
+        },
+        "montane": {
+            "spring": 5, 
+            "summer": 5, 
+            "fall": 5, 
+            "winter": 5, 
+            "wet": 0, 
+            "dry": 0, 
+            "monsoon": 0,
+            "sub_biomes": ["forest", "barren", "permafrost"],
+            "connecting_biomes": ["deciduous", "steppe", "desert", "rain_forest", "savanna"],
+            "travel_energy_enter": 2,
+            "travel_energy_exit": 2
+        },
+        "desert": {
+            "spring": 5, 
+            "summer": 5, 
+            "fall": 5, 
+            "winter": 5, 
+            "wet": 0, 
+            "dry": 0, 
+            "monsoon": 0,
+            "sub_biomes": ["beach", "desert"],
+            "connecting_biomes": ["deciduous", "steppe", "montane", "savanna"],
+            "travel_energy_enter": 1,
+            "travel_energy_exit": 1
+        },
+        "tundra": {
+            "spring": 2, 
+            "summer": 3, 
+            "fall": 2, 
+            "winter": 13, 
+            "wet": 0, 
+            "dry": 0, 
+            "monsoon": 0,
+            "sub_biomes": ["permafrost"],
+            "connecting_biomes": ["taiga", "polar_desert"],
+            "travel_energy_enter": 1,
+            "travel_energy_exit": 1
+        },
+        "polar_desert": {
+            "spring": 1, 
+            "summer": 3, 
+            "fall": 1, 
+            "winter": 15, 
+            "wet": 0, 
+            "dry": 0, 
+            "monsoon": 0,
+            "sub_biomes": ["ice"],
+            "connecting_biomes": ["tundra"],
+            "travel_energy_enter": 2,
+            "travel_energy_exit": 2
+        },
+        "rain_forest": {
+            "spring": 0, 
+            "summer": 0, 
+            "fall": 0, 
+            "winter": 0, 
+            "wet": 10, 
+            "dry": 10, 
+            "monsoon": 0,
+            "sub_biomes": ["forest", "hill", "coast", "beach", "deep_forest"],
+            "connecting_biomes": ["deciduous", "montane", "savanna"],
+            "travel_energy_enter": 1,
+            "travel_energy_exit": 1
+        },
+        "savanna": {
+            "spring": 0, 
+            "summer": 0, 
+            "fall": 0, 
+            "winter": 0, 
+            "wet": 8, 
+            "dry": 12, 
+            "monsoon": 0,
+            "sub_biomes": ["plain", "hill", "coast", "beach"],
+            "connecting_biomes": ["steppe", "montane", "desert", "rain_forest"],
+            "travel_energy_enter": 1,
+            "travel_energy_exit": 0
+        }
+    },
+    "sub_biome_weights": {
+        "template": {
+            "grass_land": [0, 0],
+            "forest": [0, 0],
+            "rock": [0, 0],
+            "desert": [0, 0],
+            "permafrost": [0, 0],
+            "ice": [0, 0]
+        },
+        "plain": {
+            "grass_land": [8, 10],
+            "forest": [0, 1],
+            "rock": [0, 1],
+            "desert": [0, 0],
+            "permafrost": [0, 0],
+            "ice": [0, 0]
+        },
+        "forest": {
+            "grass_land": [0, 2],
+            "forest": [6, 10],
+            "rock": [0, 1],
+            "desert": [0, 0],
+            "permafrost": [0, 0],
+            "ice": [0, 0]
+        },
+        "hill": {
+            "grass_land": [0, 2],
+            "forest": [2, 4],
+            "rock": [3, 6],
+            "desert": [0, 0],
+            "permafrost": [0, 0],
+            "ice": [0, 0]
+        },
+        "coast": {
+            "grass_land": [1, 2],
+            "forest": [0, 1],
+            "rock": [1, 2],
+            "desert": [0, 0],
+            "permafrost": [0, 0],
+            "ice": [0, 0]
+        },
+        "beach": {
+            "grass_land": [1, 3],
+            "forest": [0, 1],
+            "rock": [1, 2],
+            "desert": [0, 0],
+            "permafrost": [0, 0],
+            "ice": [0, 0]
+        },
+        "barren": {
+            "grass_land": [0, 2],
+            "forest": [0, 0],
+            "rock": [8, 10],
+            "desert": [0, 0],
+            "permafrost": [0, 0],
+            "ice": [0, 0]
+        },
+        "desert": {
+            "grass_land": [0, 0],
+            "forest": [0, 0],
+            "rock": [0, 1],
+            "desert": [9, 10],
+            "permafrost": [0, 0],
+            "ice": [0, 0]
+        },
+        "deep_forest": {
+            "grass_land": [0, 2],
+            "forest": [12, 20],
+            "rock": [0, 2],
+            "desert": [0, 0],
+            "permafrost": [0, 0],
+            "ice": [0, 0]
+        },
+        "permafrost": {
+            "grass_land": [0, 0],
+            "forest": [0, 0],
+            "rock": [0, 1],
+            "desert": [0, 0],
+            "permafrost": [9, 10],
+            "ice": [0, 0]
+        },
+        "polar_desert": {
+            "grass_land": [0, 0],
+            "forest": [0, 0],
+            "rock": [0, 0],
+            "desert": [0, 0],
+            "permafrost": [0, 0],
+            "ice": [9, 10]
+        }
+    },
+    "ore_dist_per_rock": {
+        "coal": 2400000,
+        "iron": 920000,
+        "alum": 19000,
+        "malgate": 13000,
+        "chrome": 12000,
+        "copper": 6300,
+        "zanox": 3700,
+        "tin": 92,
+        "silver": 8,
+        "gold": 1,
+        "titanite": 0.15,
+        "radite": 0.015
+    },
+    "ore_dist_per_rock_ratioed": {
+        "coal": 120000,
+        "iron": 46000,
+        "alum": 950,
+        "malgate": 650,
+        "chrome": 600,
+        "copper": 315,
+        "zanox": 185,
+        "tin": 4.6,
+        "silver": 0.4,
+        "gold": 0.05,
+        "titanite": 0.0075,
+        "radite": 0.00075
+    },
+    "item_amount_to_land_used_ratio": 0.1
+}
