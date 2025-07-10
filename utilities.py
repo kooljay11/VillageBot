@@ -1,6 +1,7 @@
 import json
 from copy import deepcopy
 import os
+import random as rand
 
 # Cannot name get_userinfo due to no function overloading in Python
 async def get_userinfo_by_nick(self_user, target):
@@ -45,27 +46,33 @@ async def create_user_profile(client, user_id):
 
     return default_user
 
-
-async def get_nickname(self_user, target_id):
-    for nickname, id in self_user["nicknames"].items():
+async def get_nickname(self_user, target_id, type="character"):
+    for nickname, id in self_user["nicknames"][type].items():
         if id == target_id:
             return nickname
     
     return ""
 
-async def get_id_nickname(client, self_user, target: str):
+async def get_id_nickname(client, self_user, target: str, type: str = "character"):
     #print(f'Getting id and nick for {target}')
     target = str(target)
+
     if target.isnumeric():
         #print(f'target: {target}')
         #print(f'int(target): {int(target)}')
         target_id = int(target)
-        #print(f'target_id: {target_id}')
-        target_name = await get_nickname(self_user, target_id)
-        #print(f'target_name 1: {target_name}')
+        print(f'target_id: {target_id}')
+        target_name = await get_nickname(self_user, target_id, type=type)
+        print(f'target_name 1: {target_name}')
         if target_name == "":
-            target_name = str(await client.fetch_user(target_id))
-            #print(f'target_name 2: {target_name}')
+            if type == "character":
+                target_character = await get_character(target_id)
+                target_name = target_character["name"]
+            elif type == "user":
+                target_name = str(await client.fetch_user(target_id))
+            else:
+                target_name = ""
+            print(f'target_name 2: {target_name}')
     else:
         target_id = int(self_user["nicknames"][target])
         #print(f'target: {target}')
@@ -142,7 +149,7 @@ async def print_full_character(character):
     if character["pregnancy_counter"] > 0:
         message += f'Months left of pregnancy'
     if len(character["status"]) > 0:
-        message += f'\n\tStatus: {', '.join(character["status"])}'
+        message += f'\nStatus: {', '.join(character["status"])}'
     
     #Attributes - add hunger
     message += f'\n\n**Attributes**'
@@ -159,11 +166,11 @@ async def print_full_character(character):
 
     #Skills+Languages
     message += f'\n\n**Skills**'
-    for skill in character["skills"]:
-        message += f'\n{skill}'
+    for skill_name, skill in character["skills"].items():
+        message += f'\n{skill_name.title()}: {skill["value"]} ({skill["xp"]}/{skill["max_xp"]}){"+" * skill["boost"]}'
 
     #Possible future error since language is an object not a list
-    message += f'Languages: {', '.join(character["language"])}'
+    message += f'\nLanguages: {', '.join(character["language"])}'
 
     #Equipment+Inventory NEEDS FIXING
     message += f'\n\n**Equipment: **'
@@ -180,8 +187,8 @@ async def print_full_character(character):
     for item in character["inventory"]:
         item_message = f''
         if item["amount"] > 1:
-            item_message += f'({item["amount"]}) '
-        item_message += f'({item["name"]}) '
+            item_message += f'{item["amount"]} '
+        item_message += f'{item["name"]} '
         inventory.append(f'{item_message}')
     message += f'\n{'\n'.join(inventory)}'
 
@@ -275,9 +282,12 @@ async def get_task_info(task_name, sub_task=""):
         for key, value in task_list[task_name].items():
             task_info[key] = value
 
-        if sub_task != "":
-            for key, value in task_info[sub_task].items():
-                task_info[key] = value
+        try:
+            if sub_task != "":
+                for key, value in task_info[sub_task].items():
+                    task_info[key] = value
+        except:
+            print()
 
         return task_info
     except:
@@ -333,20 +343,32 @@ async def get_item_stack_in_equip(character, item_name):
     
     return {}
 
-async def get_item_stack_in_inv(character, item_name):
+# Item state can refer to item state or tool material
+async def get_item_stack_in_inv(character, item_name, item_state = ""):
+    item_type = await get_item_type(item_name)
     for item_stack in character["inventory"]:
         if item_stack["name"] == item_name:
-            return item_stack
+            if item_state != "":
+                if item_type == "item" and item_stack["state"] == item_state:
+                    return item_stack
+                elif item_type == "tool" and item_stack["material"] == item_state:
+                    return item_stack
+            else:
+                return item_stack
     
     return {}
 
-async def get_item_stack_in_building(building, room_id, item_name):
-    return get_item_stack_in_room(building["rooms"][room_id], item_name)
+async def get_item_stack_in_building(building, room_id, item_name, item_state = ""):
+    return get_item_stack_in_room(building["rooms"][room_id], item_name, item_state=item_state)
 
-async def get_item_stack_in_room(room, item_name):
+async def get_item_stack_in_room(room, item_name, item_state = ""):
     for item_stack in room["inventory"]:
         if item_stack["name"] == item_name:
-            return item_stack
+            if item_state != "":
+                if item_stack["state"] == item_state:
+                    return item_stack
+            else:
+                return item_stack
     
     return {}
 
@@ -616,10 +638,14 @@ async def add_item_in_inv(character, item_name, num):
 
     return await add_item_stack_in_inv(character, new_item_stack)
 
-async def remove_item_in_inv(character, item_name, amount):
+async def remove_item_in_inv(character, item_name, amount, state=""):
     for item_stack in character["inventory"]:
         if item_name == item_stack["name"]:
-            return await remove_item_stack_in_inv(character, item_stack, amount)
+            item_type = await get_item_type(item_name)
+            if item_type == "item" and item_stack["state"] == state:
+                return await remove_item_stack_in_inv(character, item_stack, amount)
+            elif item_type == "tool" and item_stack["material"] == state:
+                return await remove_item_stack_in_inv(character, item_stack, amount)
 
     return 0
 
@@ -1106,6 +1132,27 @@ async def get_default_skill():
     
     return skill
 
+#Return one of the keys at random depending on the value/weight
+async def get_random_dict_item(weighted_dict, amount: int = 1):
+    total_weight = sum(weighted_dict.values())
+    result = {}
+
+    for x in range(amount):
+        random_weight = rand.uniform(0, total_weight)
+
+        # Convert the random weight to a key
+        for key, value in weighted_dict.items():
+            if random_weight <= value:
+                result[key] = result.get(key, 0) + 1
+                break
+            else:
+                random_weight -= value
+    
+    if amount == 1:
+        return list(result.keys())[0]
+
+    return result
+
 #Modes: morning_reminder, evening_reminder
 async def send_daily_reminder(client, mode, message):
     for filename in os.listdir("./data/user_data"):
@@ -1116,7 +1163,7 @@ async def send_daily_reminder(client, mode, message):
             if bool(user[mode]) and not bool(user["waffled_today"]):
                 await dm(client, user_id, message)
 
-async def add_to_queue(user_id, char_id, action, item, ward_id, amount = 1, time = 1, dump_id = [], friend_char_id = -1):
+async def add_to_queue(user_id, char_id, action, item, ward_id, amount = 1, time = 1, dump_id = [], friend_char_id = -1, target_id =  -1, subtask = "", state = ""):
     #If doing a task with someone else then look for that person in the taskqueue
     if friend_char_id >= 0:
         ward = await get_ward(ward_id)
@@ -1152,7 +1199,14 @@ async def add_to_queue(user_id, char_id, action, item, ward_id, amount = 1, time
         task_group["time"] = time
         task_group["dump_id"] = dump_id
 
-        task_info = await get_task_info(action, item)
+        if target_id > -1:
+            task_group["target_id"] = target_id
+
+        if state != "":
+            task_group["state"] = state
+
+        #task_info = await get_task_info(action, item)
+        task_info = await get_task_info(action, subtask)
 
         task_group["member_limit"] = task_info["member_limit"]
         

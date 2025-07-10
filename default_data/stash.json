@@ -1,6 +1,7 @@
 {
     "type": "public",
     "possible_types": ["public", "private", "communal"],
+    "name": "",
     "owner": {},
     "members": [],
     "waitlist": [],

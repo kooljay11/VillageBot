@@ -141,7 +141,7 @@ class Gather(commands.Cog):
         character["energy"] -= energy_required
 
         # Add to the task queue
-        result = await add_to_queue(user_id, character["id"], "gather", item_name, character["ward_id"], dump_id=dump_location,friend_char_id=with_character_id)
+        result = await add_to_queue(user_id, character["id"], "gather", item_name, character["ward_id"], dump_id=dump_location,friend_char_id=with_character_id, subtask=item_name)
 
         if result == None:
             # Save the user info

@@ -13,6 +13,10 @@ class CreateCharacter(commands.Cog):
         print(f'{__name__} loaded successfully!')
     
     @app_commands.command(name="createcharacter", description="Creates a new character.")
+    @app_commands.describe(species_name="Item")
+    @app_commands.choices(species_name=[
+        app_commands.Choice(name="Human", value="human")
+    ])
     async def create_character(self, interaction: discord.Interaction, name: str, gender: str, species_name: str):
         user_id = interaction.user.id
 
@@ -44,6 +48,11 @@ class CreateCharacter(commands.Cog):
         default_character = await get_default_character()
         character = default_character
 
+        # Make sure the character name is 1-100 characters long
+        if not (len(name) >= 1 and len(name) <= 100):
+            await reply(self.client, interaction, f'You must choose a character name that is 1-100 characters long.')
+            return
+
         #Add the user's character options
         character["id"] = new_char_id
         character["name"] = name
@@ -53,11 +62,14 @@ class CreateCharacter(commands.Cog):
         #Add default species values (update /selectcharacter whenever this is updated)
         character["energy"] = species["max_energy"]
         character["max_energy"] = species["max_energy"]
-        character["capacity"] = character["capacity"]
-        new_max_capacity = (character["max_capacity"]) * species["max_capacity_multiplier"] + species["bonus_max_capacity"]
-        character["max_capacity"] += min(new_max_capacity - character["max_capacity"], species["max_bonus_max_capacity"])
+        #character["capacity"] = character["capacity"]
+        #new_max_capacity = character["max_capacity"] * species["max_capacity_multiplier"] + species["bonus_max_capacity"]
+        #character["max_capacity"] += min(new_max_capacity - character["max_capacity"], species["max_bonus_max_capacity"])
+        character["max_capacity"] = species["base_max_weight_capacity"]
         character["hunger"] = species["max_hunger"]
         character["max_hunger"] = species["max_hunger"]
+        character["protein"] = species["max_protein"]
+        character["max_protein"] = species["max_protein"]
 
         for attr, value in species["attr"].items():
             new_value = character["attr"][attr]["value"] * value["multiplier"] + value["bonus"]
@@ -67,6 +79,9 @@ class CreateCharacter(commands.Cog):
             
         #Add the character with the new character id to the user's file
         user["characters"].append(character)
+
+        #Add the character's name to the user's list of character nicknames
+        user["nicknames"]["character"][character["name"]] = character["id"]
 
         #Increment the character count on global info
         global_info["character_counter"] += 1

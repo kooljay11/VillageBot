@@ -65,12 +65,12 @@ async def reset(client):
                     print(f'character {char_user_id["char_id"]} does not exist.')
                     continue
 
-                print(f'character["status"]: {character["status"]}')
+                #print(f'character["status"]: {character["status"]}')
 
                 if "alive" not in character["status"]:
                     print(f'character {char_user_id["char_id"]} is not alive.')
                     continue
-                print(f'character["status"]: {character["status"]}')
+                #print(f'character["status"]: {character["status"]}')
 
                 await update_character_max_capacity(character)
 
@@ -116,28 +116,28 @@ async def reset(client):
 
                         # Get the ATR modifier
                         ATR_modifier = await get_atr_mod(character, task_info["ATR"])
-                        print(f'ATR_modifier: {ATR_modifier}')
+                        #print(f'ATR_modifier: {ATR_modifier}')
 
                         # Get the tool modifier
                         tool_and_modifier = await get_best_tool(character, task_info)
                         tool_modifier = tool_and_modifier["tool_modifier"]
                         tool = tool_and_modifier["tool"]
 
-                        print(f'tool_modifier: {tool_modifier}')
+                        #print(f'tool_modifier: {tool_modifier}')
 
                         amount = math.floor(item_info["base_collection_amount"] * (1 + skill_modifier + ATR_modifier + tool_modifier) * item_info["seasonal_multiplier"][ward["season"]] * item_info["biome_multiplier"][ward["biome"]] * item_info["subbiome_multiplier"][ward["subbiome"]])
 
-                        print(f'amount: {amount}')
+                        #print(f'amount: {amount}')
 
                         # Add random yield modifier +- 30% and then round to closest integer
                         amount = math.floor(amount * random.uniform(global_info["random_yield_multiplier"][0], global_info["random_yield_multiplier"][1]) + 0.5)
 
-                        print(f'randomized amount: {amount}')
+                        #print(f'randomized amount: {amount}')
 
                         # Add partner bonus per 2 people in the group
                         amount += math.floor(amount * task_info["partner_bonus_%"]) * math.floor(len(task_group["members"]) / 2)
 
-                        print(f'partnered amount: {amount}')
+                        #print(f'partnered amount: {amount}')
 
                         # Ensure the amount is not lower than 0
                         amount = max(amount, 0)
@@ -155,7 +155,7 @@ async def reset(client):
                                 await remove_item_stack_in_inv(tool)
                             
                         overflow_item_stack = {}
-                        print(f'overflow_item_stack: {overflow_item_stack}')
+                        #print(f'overflow_item_stack: {overflow_item_stack}')
 
                         # Then add to either the selected dump location or directly to the characters inventory
                         # Prevent the character from overfilling the dump location (overflow goes to character inv) or char inventory (overflow goes to public ward stash)
@@ -165,36 +165,36 @@ async def reset(client):
                         elif len(task_group["dump_id"]) == 1:
                             stash = ward["stashes"][task_group["dump_id"]]
                             overflow_item_stack = await add_item_in_stash(stash, task_group["item"], amount)
-                        print(f'Checked building/stash')
+                        #print(f'Checked building/stash')
 
                         # Add overflow to the character's inventory or add the items directly to the player if no building was specified
                         if overflow_item_stack != {}:
                             overflow_item_stack = await add_item_stack_in_inv(character, overflow_item_stack)
                         elif task_group["dump_id"] == []:
                             overflow_item_stack = await add_item_in_inv(character, task_group["item"], amount)
-                        print(f'Checked character')
-                        print(f'overflow_item_stack: {overflow_item_stack}')
+                        #print(f'Checked character')
+                        #print(f'overflow_item_stack: {overflow_item_stack}')
                         
                         if overflow_item_stack != {}:
                             # Add overflow to public ward stash
                             await add_item_stack_in_stash(public_stash, overflow_item_stack)
-                        print(f'Checked public stash')
+                        #print(f'Checked public stash')
 
                         # Give the character skill/atr XP for their action
                         for skill_name in task_info["skill"]:
                             await add_skill_xp(character, skill_name)
 
-                        print(f'task_info["skill"]: {task_info["skill"]}')
+                        #print(f'task_info["skill"]: {task_info["skill"]}')
                         
                         for atr_name in task_info["ATR"]:
                             await add_atr_xp(character, atr_name)
-                        print(f'task_info["ATR"]: {task_info["ATR"]}')
-                        print(f'item_info["land_required"]: {item_info["land_required"]}')
+                        #print(f'task_info["ATR"]: {task_info["ATR"]}')
+                        #print(f'item_info["land_required"]: {item_info["land_required"]}')
 
                         # If forest or rock land was used then turn a corresponding amount of it into plains if the biome is not 
                         if item_info["land_required"] in ["forest_land", "rocky_land"]:
                             land_converted = math.floor(world_gen["item_amount_to_land_used_ratio"] * amount)
-                            print(f'land_converted: {land_converted}')
+                            #print(f'land_converted: {land_converted}')
 
                             # Ensure that the amount of land converted cant make the target available land less than 0
 
@@ -246,11 +246,14 @@ async def reset(client):
                     print(f'character {char_user_id["char_id"]} does not exist.')
                     continue
 
-                print(f'character["status"]: {character["status"]}')
+                #print(f'character["status"]: {character["status"]}')
 
                 if "alive" not in character["status"]:
                     print(f'character {char_user_id["char_id"]} is not alive.')
                     continue
+
+                # Make them one month older
+                character["age_months"] += 1
 
                 # These don't work because you cannot shallow copy a value of a dictionary
                 #hp = character["attr"]["CON"]["value"]
@@ -276,15 +279,15 @@ async def reset(client):
                 hunger_consumed = min(hunger_consumed, character["max_energy"] - character["energy"])
 
                 character["energy"] += hunger_consumed
-                print(f'hunger_consumed: {hunger_consumed}')
+                #print(f'hunger_consumed: {hunger_consumed}')
 
                 # If no hunger was used then -1 hunger
                 # This makes it possible for characters to get negative hunger, which will be returned to 0 a few lines below in the code
                 hunger_consumed = max(hunger_consumed, 1)
-                print(f'hunger_consumed inactive: {hunger_consumed}')
+                #print(f'hunger_consumed inactive: {hunger_consumed}')
 
                 character["hunger"] -= hunger_consumed
-                print(f'character["hunger"]: {character["hunger"]}')
+                #print(f'character["hunger"]: {character["hunger"]}')
 
                 # If hunger is still negative then refill it using HP: 1 protein → 2 hunger, 1 HP → 1 hunger
                 while character["hunger"] < 0:
@@ -294,9 +297,9 @@ async def reset(client):
                     else:
                         character["hunger"] += 1
                         CON["value"] -= 1
-                print(f'character["hunger"]: {character["hunger"]}')
+                #print(f'character["hunger"]: {character["hunger"]}')
                 #print(f'hp: {hp}')
-                print(f'character["attr"]["CON"]["value"]: {character["attr"]["CON"]["value"]}')
+                #print(f'character["attr"]["CON"]["value"]: {character["attr"]["CON"]["value"]}')
 
                 # Pregnancy: -2 energy NEED TO DO THIS LATER
 
@@ -329,10 +332,10 @@ async def reset(client):
                     CON["value"] += 1
                     character["hunger"] -= 1
                     #print(f'hp += 1: {hp}')
-                    print(f'character["hunger"] -= 1: {character["hunger"]}')
+                    #print(f'character["hunger"] -= 1: {character["hunger"]}')
                 
                 #print(f'hp: {hp}')
-                print(f'character["attr"]["CON"]["value"]: {character["attr"]["CON"]["value"]}')
+                #print(f'character["attr"]["CON"]["value"]: {character["attr"]["CON"]["value"]}')
 
                 # If HP is still 0 or less then they are dead
                 if CON["value"] <= 0:
@@ -348,7 +351,7 @@ async def reset(client):
     # Add to the day counter and cycle the season accordingly
     global_info["day_counter"] += 1
     global_info["current_season"] = await get_season(global_info["day_counter"])
-    print(f'global_info["day_counter"]: {global_info["day_counter"]}')
+    #print(f'global_info["day_counter"]: {global_info["day_counter"]}')
 
     await save_globalinfo(global_info)
 
