@@ -7,8 +7,13 @@
     "stashes": [
         {
             "type": "public",
+            "name": "",
+            "owner": {},
+            "members": [],
             "inventory": [],
-            "capacity": 0
+            "capacity": 0,
+            "max_capacity": 100,
+            "land_usage": 1
         }
     ],
     "buildings": [],

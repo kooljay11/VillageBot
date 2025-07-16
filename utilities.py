@@ -2,6 +2,7 @@ import json
 from copy import deepcopy
 import os
 import random as rand
+import math
 
 # Cannot name get_userinfo due to no function overloading in Python
 async def get_userinfo_by_nick(self_user, target):
@@ -61,9 +62,9 @@ async def get_id_nickname(client, self_user, target: str, type: str = "character
         #print(f'target: {target}')
         #print(f'int(target): {int(target)}')
         target_id = int(target)
-        print(f'target_id: {target_id}')
+        #print(f'target_id: {target_id}')
         target_name = await get_nickname(self_user, target_id, type=type)
-        print(f'target_name 1: {target_name}')
+        #print(f'target_name 1: {target_name}')
         if target_name == "":
             if type == "character":
                 target_character = await get_character(target_id)
@@ -72,13 +73,273 @@ async def get_id_nickname(client, self_user, target: str, type: str = "character
                 target_name = str(await client.fetch_user(target_id))
             else:
                 target_name = ""
-            print(f'target_name 2: {target_name}')
+            #print(f'target_name 2: {target_name}')
     else:
-        target_id = int(self_user["nicknames"][target])
+        target_id = int(self_user["nicknames"][type][target])
         #print(f'target: {target}')
         target_name = target
     
     return {"id": target_id, "name": target_name}
+
+async def get_formatted_char_list(client, self_user, member_list, stash_type: str = ""):
+    formatted_member_list = []
+
+    for member in member_list:
+        member_char_id_nick = await get_id_nickname(client, self_user, member["char_id"])
+        member_user_id_nick = await get_id_nickname(client, self_user, member["user_id"], "user")
+        message = f'{member_char_id_nick["name"]} (id: {member_char_id_nick["id"]}) - user: {member_user_id_nick["name"]} (id: {member_user_id_nick["id"]})'
+        if stash_type == "communal":
+            message += f' :+1: {len(member["supporters"])} :-1: {len(member["critics"])}'
+        formatted_member_list.append(message)
+
+    
+    return formatted_member_list
+
+async def get_formatted_item_list(item_list):
+    formatted_item_list = []
+
+    for item in item_list:
+        # Item: quantity item_name (state) :scales: weight :package: volume
+        # Tool: tool_name (material) (quality) (durability/max durability) :scales: weight :package: volume
+        item_type = await get_item_type(item["name"])
+
+        if item_type == "item":
+            formatted_item_list.append(f'{item["amount"]} {item["name"]} ({item["state"]}) :scales: {item["total_weight"]} :package: {item["total_volume"]}')
+        elif item_type == "tool":
+            global_info = await get_globalinfo()
+            quality_name = list(global_info["tool_quality_levels"].keys())[item["quality"]]
+            formatted_item_list.append(f'{item["name"]} ({item["material"]}) ({quality_name}) ({item["durability"]}/{item["max_durability"]}) :scales: {item["total_weight"]} :package: {item["total_volume"]}')
+        
+    return formatted_item_list
+
+async def get_perm_list_by_char_id(stash, char_id):
+    # Get the character's's role
+    role = await get_stash_role(stash, char_id)
+    #print(f'roles: {roles}')
+
+    # Get the perms for that role
+    perms = await get_perm_list_by_role(stash, role)
+    #print(f'roles: {roles}')
+    #print(f'perms: {perms}')
+    
+    # Remove all duplicates
+    perms = list(set(perms))
+
+    return perms
+
+async def get_perm_list_by_role(stash, char_role):
+    default_stash = await get_default_stash()
+    perms = deepcopy(default_stash[f'{stash["type"]}_perms'][char_role])
+    index = 0
+
+    # If another role is mentioned in the perms then delete that entry and add that role's perms to the list
+    while index < len(perms):
+        for role in default_stash[f'{stash["type"]}_perms'].keys():
+            if perms[index] == role:
+                perms.remove(perms[index])
+                perms += await get_perm_list_by_role(stash, role)
+
+                # Make sure the checker doesn't miss the first perm of the newly appended permlist
+                index -= 1
+
+        index += 1
+    
+    # If the perm starts with - then remove all perms that have the same name (allows for negative perms)
+    index = 0
+    while index < len(perms):
+        if perms[index][0] == "-":
+            perm_to_remove = perms[index][1:]
+            perms.remove(perms[index])
+            while perm_to_remove in perms:
+                perms.remove(perm_to_remove)
+            
+            # Start the search over again because perms may have been removed before or after the index
+            index = -1
+
+        index += 1
+
+    # Remove all duplicates
+    perms = list(set(perms))
+
+    return perms
+
+async def get_stash_role(stash, char_id):
+    role = "everyone"
+    #char_id = int(char_id)
+
+    # Check if the character is the owner
+    owner = stash.get("owner", {})
+    if owner != {} and owner["char_id"] == char_id:
+        role = "owner"
+    # Otherwise check if the character is a member
+    elif stash.get("members", "") != "":
+        for member in stash["members"]:
+            if char_id == member["char_id"]:
+                role = "member"
+    
+    return role
+
+# Finds the dict in the dict_list using the key value and returns the dict, otherwise return None
+async def get_dict_by_key_value(dict_list, key, value, default_return = None):
+    return next((x for x in dict_list if x[key] == value), default_return)
+
+async def update_stash_informal_elections(client, stash, stash_id, ward_id):
+    # Make sure this is a communal stash
+    if stash["type"] != "communal":
+        return
+    
+    # MAKE SURE TO SEND DMS FOR EVERY CHANGE THAT AFFECTS A CHARACTER
+    messages = []
+
+    index = 0
+
+    #print(f'index member: {index}')
+
+    # If a member has become their own critic then remove them as a member, remove all their votes, and add them to the ban list
+    while index < len(stash["members"]):
+        member = stash["members"][index]
+        if member["char_id"] in member["critics"]:
+            await remove_all_stash_influence(stash, member["char_id"])
+            removed_member = stash["members"].pop(index)
+            stash["ban_list"].append(removed_member)
+
+            user = await get_userinfo(removed_member["user_id"])
+            character = await get_user_character(user, removed_member["char_id"])
+
+            messages.append(f'{character["name"]} (id: {character["id"]}) (user id: {removed_member["user_id"]}) left stash {stash_id} in ward {ward_id}.')
+        else:
+            index += 1
+
+    #print(f'index member 2: {index}')
+
+    # If an member has the required critics then remove them as a member, remove all their votes, and add them to the ban list
+    # Going backwards to check newer members first, favouring older members
+    index = len(stash["members"]) - 1
+    #print(f'index: {index}')
+    while index >= 0:
+        member = stash["members"][index]
+        print(f'member: {member["char_id"]}')
+        votes_needed = await calc_informal_election_votes_needed(len(stash["members"]), len(member["supporters"]))
+        #print(f'votes_needed: {votes_needed}')
+
+        if len(member["critics"]) >= votes_needed:
+            await remove_all_stash_influence(stash, member["char_id"])
+            removed_member = stash["members"].pop(index)
+            stash["ban_list"].append(removed_member)
+
+            user = await get_userinfo(removed_member["user_id"])
+            character = await get_user_character(user, removed_member["char_id"])
+            #print(f'character: {character["name"]}')
+
+            ban_msg = f'{character["name"]} (id: {character["id"]}) (user id: {removed_member["user_id"]}) was removed from stash {stash_id} in ward {ward_id}.'
+
+            messages.append(ban_msg)
+            #print(f'ban_msg: {ban_msg}')
+
+            await dm(client, removed_member["user_id"], ban_msg)
+        
+        index -= 1
+    
+    #print(f'index banned: {index}')
+
+    # If a banned character no longer has the required critics and is not their own critic then add them to the waitlist
+    index = 0
+    while index < len(stash["ban_list"]):
+        banned_char = stash["ban_list"][index]
+        votes_needed = await calc_informal_election_votes_needed(len(stash["members"]), len(banned_char["supporters"]))
+
+        if len(banned_char["critics"]) >= votes_needed and banned_char["char_id"] not in banned_char["critics"]:
+            unbanned_char = stash["ban_list"].pop(index)
+            stash["waitlist"].append(unbanned_char)
+
+            user = await get_userinfo(unbanned_char["user_id"])
+            character = await get_user_character(user, unbanned_char["char_id"])
+
+            messages.append(f'{character["name"]} (id: {character["id"]}) (user id: {unbanned_char["user_id"]}) was moved to the waitlist of stash {stash_id} in ward {ward_id}.')
+        else:
+            index += 1
+
+    # If an applicant has the required support then add them as a member
+    index = 0
+    #print(f'index waitlist: {index}')
+    while index < len(stash["waitlist"]):
+        applicant = stash["waitlist"][index]
+        votes_needed = await calc_informal_election_votes_needed(len(stash["members"]), len(applicant["critics"]))
+
+        if len(applicant["supporters"]) >= votes_needed:
+            accepted_applicant = stash["waitlist"].pop(index)
+            stash["members"].append(accepted_applicant)
+
+            user = await get_userinfo(accepted_applicant["user_id"])
+            character = await get_user_character(user, accepted_applicant["char_id"])
+
+            messages.append(f'{character["name"]} (id: {character["id"]}) (user id: {accepted_applicant["user_id"]}) is now a member of stash {stash_id} in ward {ward_id}.')
+        else:
+            index += 1
+    
+    # DM users of all changes in a single message
+    message = "\n".join(messages)
+    if len(messages) > 0:
+        for member in stash["members"]:
+            await dm(client, member["user_id"], message)
+
+    return message
+
+async def start_stash_election(stash):
+    global_info = await get_globalinfo()
+
+    # If no election is happening right now then start one
+    if stash["election_days_left"] <= 0:
+        stash["election_days_left"] = global_info["election_days_length"]
+        stash["recall_voters"] = []
+
+    return
+
+async def calc_informal_election_votes_needed(num_members, num_opposed):
+    global_info = await get_globalinfo()
+
+    #print(f'global_info["informal_election_max_votes_needed"]: {global_info["informal_election_max_votes_needed"]}')
+    #print(f'global_info["informal_election_min_votes_needed"]: {global_info["informal_election_min_votes_needed"]}')
+    #print(f'num_members: {num_members}')
+    #print(f'num_opposed: {num_opposed}')
+    #print(f'(({global_info["informal_election_max_votes_needed"]} - {global_info["informal_election_min_votes_needed"]})/({num_members} / 2 - 1)) * {num_opposed} + {global_info["informal_election_min_votes_needed"]}')
+    denom = (num_members / 2 - 1)
+
+    #return num_opposed * ((global_info["informal_election_max_votes_needed"] - global_info["informal_election_min_votes_needed"])/(num_members / 2 - 1))+ global_info["informal_election_min_votes_needed"]
+    if denom > 0:
+        result_ratio = num_opposed * ((global_info["informal_election_max_votes_needed"] - global_info["informal_election_min_votes_needed"])/denom) + global_info["informal_election_min_votes_needed"]
+    else:
+        result_ratio = global_info["informal_election_min_votes_needed"]
+    
+    #print(f'result_ratio: {result_ratio}')
+    #print(f'num_members \* result_ratio: {num_members} \* {result_ratio}')
+    
+    return num_members * result_ratio
+
+async def remove_all_stash_influence(stash, char_id):
+    # Make sure their votes of support and critic are removed from characters in all member, wait, and ban lists
+    for member_info in stash["members"]:
+        if char_id in member_info["supporters"]:
+            member_info["supporters"].remove(char_id)
+        if char_id in member_info["critics"]:
+            member_info["critics"].remove(char_id)
+    
+    for applicant in stash["waitlist"]:
+        if char_id in applicant["supporters"]:
+            applicant["supporters"].remove(char_id)
+        if char_id in applicant["critics"]:
+            applicant["critics"].remove(char_id)
+
+    for banned in stash["ban_list"]:
+        if char_id in applicant["supporters"]:
+            banned["supporters"].remove(char_id)
+        if char_id in applicant["critics"]:
+            banned["critics"].remove(char_id)
+    
+    if char_id in stash["convert_voters"]:
+        stash["convert_voters"].remove(char_id)
+
+    return
 
 async def get_species(species_name):
     with open(f"./data/species/{species_name}.json", "r") as file:
@@ -273,6 +534,12 @@ async def get_default_character():
     
     return character
 
+async def get_default_stash():
+    with open("./default_data/stash.json", "r") as file:
+        default_stash = json.load(file)
+    
+    return default_stash
+
 async def get_task_info(task_name, sub_task=""):
     task_list = await get_tasks()
 
@@ -372,7 +639,7 @@ async def get_item_stack_in_room(room, item_name, item_state = ""):
     
     return {}
 
-async def add_item_in_stash(stash, item_name, num):
+async def add_item_in_stash(stash, item_name, num, item_state = ""):
     amount = deepcopy(num)
 
     # Make sure its not a tool
@@ -382,28 +649,77 @@ async def add_item_in_stash(stash, item_name, num):
         return
 
     # Make a new item stack for the items being added
-    new_item_stack = await create_item_stack(item_name, amount=amount)
+    new_item_stack = await create_item_stack(item_name, amount=amount, state=item_state)
 
     return await add_item_stack_in_stash(stash, new_item_stack)
 
-async def add_item_stack_in_stash(stash, item_stack):
+async def add_item_stack_in_stash(stash, item_stack, ward = ""):
     item_type = await get_item_type(item_stack["name"])
+
+    item_info = await get_item(item_stack["name"], item_state=item_stack["state"])
 
     # If its an item then check if a stack already exists
     if item_type == "item":
-        existing_item_stack = await get_item_stack_in_room(stash, item_stack["name"])
+        existing_item_stack = await get_item_stack_in_room(stash, item_stack["name"], item_state=item_stack["state"])
     else:
         existing_item_stack = {}
 
+    # Check how much volume capacity is left
+    remaining_volume_capacity = stash["max_capacity"] - stash["capacity"]
+
+    # Calculate how many more items can fit within that weight capacity
+    max_amount_added = int(remaining_volume_capacity / item_info["volume"])
+
+    # If this is the public stash then expand it accordingly so more items can fit
+    if stash["type"] == "public" and max_amount_added < item_stack["amount"]:
+        default_stash = await get_default_stash()
+
+        amount_remaining = item_stack["amount"] - max_amount_added
+        land_expansion_required = amount_remaining * item_stack["volume"] / default_stash["max_capacity"] * default_stash["land_usage"]
+
+        land_expansion_amount = min(land_expansion_required, ward["grass_land_available"])
+
+        # Round the expansion amount to the nearest default land_usage
+        land_expansion_amount = int(land_expansion_amount / default_stash["land_usage"]) * default_stash["land_usage"]
+
+        # Expand the land
+        ward["grass_land_available"] -= land_expansion_amount
+        stash["max_capacity"] += default_stash["max_capacity"] * (land_expansion_amount/ default_stash["land_usage"])
+        stash["land_usage"] += land_expansion_amount
+
+        max_amount_added = item_stack["amount"]
+
     # If a stack exists then add to it, otherwise, create a new stack
     if existing_item_stack != {}:
-        existing_item_stack["amount"] += item_stack["amount"]
-        item_stack = {}
+        # If all the items fit then add the requested amount to the existing item stack
+        if max_amount_added >= item_stack["amount"]:
+            existing_item_stack["amount"] += item_stack["amount"]
+            #item_stack["amount"] = 0
+            item_stack = {}
 
-        await update_item_stack_weight_volume(existing_item_stack)
+            await update_item_stack_weight_volume(existing_item_stack)
+        # Otherwise add the projected number of items to the existing item stack and then give the remainder to the left over item stack
+        else:
+            existing_item_stack["amount"] += max_amount_added
+            item_stack["amount"] -= max_amount_added
+
+            await update_item_stack_weight_volume(existing_item_stack)
+            await update_item_stack_weight_volume(item_stack)
     else:
-        stash["inventory"].append(deepcopy(item_stack))
-        item_stack = {}
+        # If all the items fit then add the requested amount to the stash's inventory
+        if max_amount_added >= item_stack["amount"]:
+            stash["inventory"].append(deepcopy(item_stack))
+            item_stack = {}
+        # Otherwise add the projected number of items to the stash's inventory and then give the remainder to the left over item stack
+        else:
+            added_item_stack = deepcopy(item_stack)
+            added_item_stack["amount"] = max_amount_added
+            item_stack["amount"] -= max_amount_added
+
+            await update_item_stack_weight_volume(added_item_stack)
+            await update_item_stack_weight_volume(item_stack)
+
+            stash["inventory"].append(added_item_stack)
     
     # Update the stashs new volume capacity
     await update_stash_volume_capacity(stash)
@@ -411,12 +727,12 @@ async def add_item_stack_in_stash(stash, item_stack):
     # Return a stack that has anything left in the original stack
     return item_stack
 
-async def remove_item_in_stash(stash, item_name, amount):
+async def remove_item_in_stash(stash, item_name, amount, item_state = ""):
     for item_stack in stash["inventory"]:
-        if item_name == item_stack["name"]:
+        if item_name == item_stack["name"] and item_state == item_stack["state"]:
             return await remove_item_stack_in_stash(stash, item_stack, amount)
 
-    return 0
+    return {}
 
 # Item stack is assumed to be a linked item_stack from the stash's inventory
 async def remove_item_stack_in_stash(stash, item_stack, amount=-1):
@@ -442,27 +758,27 @@ async def remove_item_stack_in_stash(stash, item_stack, amount=-1):
 
     return removed_item_stack
 
-async def add_item_in_building(building, room_id, item_name, num):
+async def add_item_in_building(building, room_id, item_name, num, item_state = ""):
     room = building["rooms"][room_id]
 
-    return await add_item_in_room(room, item_name, num)
+    return await add_item_in_room(room, item_name, num, item_state=item_state)
     
 async def add_item_stack_in_building(building, room_id, item_stack):
     room = building["rooms"][room_id]
 
     return await add_item_stack_in_room(room, item_stack)
 
-async def remove_item_in_building(building, room_id, item_name, amount):
+async def remove_item_in_building(building, room_id, item_name, amount, item_state = ""):
     room = building["rooms"][room_id]
 
-    return await remove_item_in_room(room, item_name, amount)
+    return await remove_item_in_room(room, item_name, amount, item_state=item_state)
 
 async def remove_item_stack_in_building(building, room_id, item_stack, amount=-1):
     room = building["rooms"][room_id]
 
-    return await remove_item_stack_in_room(room, item_stack)
+    return await remove_item_stack_in_room(room, item_stack, amount=amount)
 
-async def add_item_in_room(room, item_name, num):
+async def add_item_in_room(room, item_name, num, item_state = ""):
     amount = deepcopy(num)
 
     # Make sure its not a tool
@@ -472,14 +788,14 @@ async def add_item_in_room(room, item_name, num):
         return
 
     # Make a new item stack for the items being added
-    new_item_stack = await create_item_stack(item_name, amount=amount)
+    new_item_stack = await create_item_stack(item_name, amount=amount, item_state=item_state)
 
     return await add_item_stack_in_room(room, new_item_stack)
 
 async def add_item_stack_in_room(room, item_stack):
     item_type = await get_item_type(item_stack["name"])
 
-    item_info = await get_item(item_stack["name"])
+    item_info = await get_item(item_stack["name"], item_state=item_stack["state"])
 
     # If its an item then check if a stack already exists
     if item_type == "item":
@@ -487,10 +803,10 @@ async def add_item_stack_in_room(room, item_stack):
     else:
         existing_item_stack = {}
 
-    # Check how much weight capacity is left
+    # Check how much volume capacity is left
     remaining_volume_capacity = room["max_capacity"] - room["capacity"]
 
-    # Calculate how many more items can fit within that weight capacity
+    # Calculate how many more items can fit within that volume capacity
     max_amount_added = int(remaining_volume_capacity / item_info["volume"])
 
     # If a stack exists then add to it, otherwise, create a new stack
@@ -531,12 +847,12 @@ async def add_item_stack_in_room(room, item_stack):
     # Return a stack that has anything left in the original stack
     return item_stack
 
-async def remove_item_in_room(room, item_name, amount):
+async def remove_item_in_room(room, item_name, amount, item_state = ""):
     for item_stack in room["inventory"]:
-        if item_name == item_stack["name"]:
+        if item_name == item_stack["name"] and item_state == item_stack["state"]:
             return await remove_item_stack_in_room(room, item_stack, amount)
 
-    return 0
+    return {}
 
 # Item stack is assumed to be a linked item_stack from the building's inventory
 async def remove_item_stack_in_room(room, item_stack, amount=-1):
@@ -565,7 +881,7 @@ async def remove_item_stack_in_room(room, item_stack, amount=-1):
 async def add_item_stack_in_inv(character, item_stack):
     item_type = await get_item_type(item_stack["name"])
 
-    item_info = await get_item(item_stack["name"])
+    item_info = await get_item(item_stack["name"], item_state=item_stack["state"])
 
     # If its an item then check if a stack already exists
     if item_type == "item":
@@ -625,7 +941,7 @@ async def add_item_stack_in_inv(character, item_stack):
     # Return a stack that has anything left in the original stack
     return item_stack
 
-async def add_item_in_inv(character, item_name, num):
+async def add_item_in_inv(character, item_name, num, item_state=""):
     amount = deepcopy(num)
 
     # Make sure its not a tool
@@ -634,20 +950,20 @@ async def add_item_in_inv(character, item_name, num):
     if item_type != "item":
         return
     # Make a new item stack for the items being added
-    new_item_stack = await create_item_stack(item_name, amount=amount)
+    new_item_stack = await create_item_stack(item_name, amount=amount, state=item_state)
 
     return await add_item_stack_in_inv(character, new_item_stack)
 
-async def remove_item_in_inv(character, item_name, amount, state=""):
+async def remove_item_in_inv(character, item_name, amount, item_state=""):
     for item_stack in character["inventory"]:
         if item_name == item_stack["name"]:
             item_type = await get_item_type(item_name)
-            if item_type == "item" and item_stack["state"] == state:
+            if item_type == "item" and item_stack["state"] == item_state:
                 return await remove_item_stack_in_inv(character, item_stack, amount)
-            elif item_type == "tool" and item_stack["material"] == state:
+            elif item_type == "tool" and item_stack["material"] == item_state:
                 return await remove_item_stack_in_inv(character, item_stack, amount)
 
-    return 0
+    return {}
 
 # Item stack is assumed to be a linked item_stack from the character's inventory
 async def remove_item_stack_in_inv(character, item_stack, amount=-1):
@@ -704,13 +1020,14 @@ async def create_item_stack(item_name, state="", material="", quality=0, amount=
         item_stack.pop("purity")
         item_stack.pop("mixture")
 
-        item_info = await get_item(item_name)
+        item_info = await get_item(item_name, item_state=state)
 
         # Calculate durability using material and quality
         quality_multiplier = (await convert_quality_name_num(quality_num=quality))["value"]
         material_multiplier = global_info["material_durability_modifiers"][material]
         item_stack["max_durability"] = item_info["base_durability"] * quality_multiplier * material_multiplier
         item_stack["durability"] = item_stack["max_durability"]
+        item_stack["amount"] = 1
     else:
     # If its an item then remove nick_name, material, quality, purity, size, mixture, sharp, durability, max_durability
         item_stack.pop("nick_name")
@@ -724,8 +1041,7 @@ async def create_item_stack(item_name, state="", material="", quality=0, amount=
         item_stack.pop("max_durability")
 
         item_stack["state"] = state
-    
-    item_stack["amount"] = amount
+        item_stack["amount"] = amount
     item_stack["name"] = item_name
 
     await update_item_stack_weight_volume(item_stack)
@@ -733,7 +1049,7 @@ async def create_item_stack(item_name, state="", material="", quality=0, amount=
     return item_stack
 
 async def update_item_stack_weight_volume(item_stack):
-    item_info = await get_item(item_stack["name"])
+    item_info = await get_item(item_stack["name"], item_state=item_stack["state"])
 
     item_stack["total_weight"] = item_info["weight"] * item_stack["amount"]
     item_stack["total_volume"] = item_info["volume"] * item_stack["amount"]
@@ -849,8 +1165,8 @@ async def get_item_by_name(item_name):
     
     return task_info
 
-async def get_item_available_in_ward(ward, item_name):
-    item = await get_item(item_name)
+async def get_item_available_in_ward(ward, item_name, item_state = ""):
+    item = await get_item(item_name, item_state=item_state)
 
     if ward[f'{item["land_required"]}_available'] > 0:
         return True
@@ -881,6 +1197,111 @@ async def get_best_tool(character, task_info):
         tool_modifier == tools[tool["name"]]
 
     return {"tool": tool, "tool_modifier": tool_modifier}
+
+# Needed to remove any membership and influence a dead character once had
+async def remove_all_memberships(char_id):
+    for filename in os.listdir("./data/locations/wards"):
+        if filename.endswith(".json"):
+            ward_id = os.path.splitext(filename)[0]
+            ward = await get_ward(ward_id)
+
+            await remove_ward_stash_membership(ward, char_id)
+    return
+
+async def remove_ward_stash_membership(client, ward, char_id):
+    stash_id = 0
+    while stash_id < len(ward["stashes"]):
+        stash = ward["stashes"][stash_id]
+        global_info = await get_globalinfo()
+
+        if stash["owner"] != {} and stash["owner"]["char_id"] == char_id:
+            if len(stash["members"]) > 1:
+                # If is owner AND stash type = private AND there are more than 1 other members then automatically convert to representative stash and start election
+                if stash["type"] == "private":
+                    stash["type"] = "representative"
+                # If is owner AND stash type = representative AND there are more than 1 other members then start election
+                elif stash["type"] == "representative":
+                    print()
+
+                # If no election is happening right now then start one
+                if stash["election_days_left"] <= 0:
+                    stash["election_days_left"] = global_info["election_days_length"]
+                    stash["recall_voters"] = []
+
+            removed_member = deepcopy(stash["owner"])
+            stash["owner"] = {}
+
+            # If is owner AND stash type = private/representative AND 1 other member left then make the remaining user the owner
+            if len(stash["members"]) == 1:
+                stash["owner"] = deepcopy(stash["members"][0])
+                stash["members"] = []
+
+                # Also stop any election/recall election
+                stash["election"] = {}
+                stash["election_days_left"] = 0
+                stash["recall_voters"] = []
+        else:
+            member = await get_dict_by_key_value(stash["members"], 'char_id', char_id)
+            removed_member = deepcopy(member)
+            if member != None:
+                stash["members"].remove(member)
+            # If they don't belong to this stash then move on
+            else:
+                stash_id += 1
+                continue
+        
+        # If an election is happening right now then remove them from the candidate list
+        if stash["election_days_left"] > 0:
+            if char_id in stash["election"].keys():
+                stash["election"].pop(char_id)
+            
+            # If the person voted in an ongoing election, then remove their vote
+            for candidate_id, voter_ids in stash["election"]:
+                if char_id in voter_ids[candidate_id]:
+                    voter_ids[candidate_id].remove(char_id)
+        else:
+            # Remove any recall votes the character has made
+            if char_id in stash["recall_voters"]:
+                stash["recall_voters"].remove(char_id)
+            
+            # If stash type = representative, check whether a recall election can be called
+            num_recall_votes_needed = global_info["recall_threshold"] * len(stash["members"])
+
+            if stash["type"] == "representative" and len(stash["recall_voters"]) >= num_recall_votes_needed:
+                stash["election_days_left"] = global_info["election_days_length"]
+                stash["recall_voters"] = []
+
+        # If stash type = communal, put them on the banlist and have them be one of their own critics
+        if stash["type"] == "communal":
+            removed_member["critics"].append(char_id)
+            stash["ban_list"].append(removed_member)
+
+            await remove_all_stash_influence(stash, char_id)
+
+            # Update any stash informal elections
+            await update_stash_informal_elections(client, stash, stash_id, ward["id"])
+
+        public_stash = ward["stashes"][0]
+
+        message = f'You left the stash. '
+
+        # If there are no other members then delete the stash and send all items to public
+        if stash["owner"] == {} and stash["members"] == []:
+            message += f'Because there was no one left in the stash, the stash was removed and all items are added to the public stash.'
+
+            for item_stack in stash["inventory"]:
+                await add_item_stack_in_stash(public_stash, item_stack, ward)
+
+            # Return the land used back
+            ward["grass_land_available"] += stash["land_usage"]
+            
+            ward["stashes"].remove(stash)
+        else:
+            stash_id += 1
+
+        await save_ward(ward)
+
+    return
 
 async def get_building(ward, building_id):
     return ward["buildings"][building_id]

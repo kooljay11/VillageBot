@@ -1,18 +1,46 @@
 {
     "type": "public",
-    "possible_types": ["public", "private", "communal"],
+    "possible_types": ["public", "private", "representative", "communal"],
     "name": "",
     "owner": {},
     "members": [],
+    "perms": {
+        "all": ["info", "join", "create", "list", "deposit", "withdraw", "expand", "leave", "toggle_theft_alert", "toggle_transactions", "accept", "deny", "election", "recall", "vote", "unvote", "toggle_support", "kick", "ban", "unban", "rename", "del", "convert", "start_election", "set_owner", "applicant_list", "banned_list"]
+    },
+    "public_perms": {
+        "everyone": ["info", "deposit", "withdraw", "expand"]
+    },
+    "private_perms": {
+        "owner": ["toggle_transactions", "accept", "deny", "kick", "ban", "unban", "rename", "del", "convert", "set_owner", "member"],
+        "member": ["deposit", "withdraw", "expand", "leave", "toggle_theft_alert", "applicant_list", "banned_list", "everyone"],
+        "everyone": ["info", "join"]
+    },
+    "representative_perms": {
+        "owner": ["accept", "deny", "kick", "ban", "unban", "rename", "del", "convert", "start_election", "member"],
+        "member": ["deposit", "withdraw", "expand", "leave", "toggle_theft_alert", "toggle_transactions", "election", "recall", "vote", "unvote", "applicant_list", "banned_list", "everyone"],
+        "everyone": ["info", "join"]
+    },
+    "communal_perms": {
+        "member": ["deposit", "withdraw", "expand", "leave", "toggle_theft_alert", "toggle_transactions", "election", "toggle_support", "deny", "kick", "rename", "applicant_list", "banned_list", "convert", "everyone"],
+        "everyone": ["info", "join"]
+    },
+    "convert_voters": [],
+    "recall_voters": [],
+    "election": {},
+    "election_days_left": 0,
     "waitlist": [],
+    "ban_list": [],
     "template_member": {
-        "char_id": 2,
-        "user_id": 107886996365508608,
+        "char_id": 0,
+        "user_id": 0,
         "theft_alert": true,
+        "transaction_log": false,
         "supporters": [],
-        "critics": []
+        "critics": [],
+        "perms": []
     },
     "inventory": [],
     "capacity": 0,
-    "max_capacity": 0
+    "max_capacity": 100,
+    "land_usage": 1
 }

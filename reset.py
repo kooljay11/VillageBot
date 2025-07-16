@@ -13,7 +13,7 @@ async def reset(client):
 
     global_info = await get_globalinfo()
     world_gen = await get_world_gen()
-    print(f'global_info["t_exchange_rate"]: {global_info["t_exchange_rate"]}')
+    #print(f'global_info["t_exchange_rate"]: {global_info["t_exchange_rate"]}')
 
     for filename in os.listdir("./data/user_data"):
         if filename.endswith(".json"):
@@ -39,7 +39,7 @@ async def reset(client):
     
     # Randomize the w-t exchange rate
     global_info["t_exchange_rate"] = random.randint(int(global_info["t_exchange_rate_range"][0]), int(global_info["t_exchange_rate_range"][1]))
-    print(f'global_info["t_exchange_rate"]: {global_info["t_exchange_rate"]}')
+    #print(f'global_info["t_exchange_rate"]: {global_info["t_exchange_rate"]}')
 
 
     # Run all queued commands in each ward
@@ -48,6 +48,7 @@ async def reset(client):
             ward_id = os.path.splitext(filename)[0]
             ward = await get_ward(ward_id)
             public_stash = ward["stashes"][0]
+            #print(f'ward_id: {ward_id}')
 
             # Update the max_capacity of all alive players depending on their ARM and LEG attributes
             for char_user_id in ward["character_ids_user_ids"]:
@@ -343,6 +344,68 @@ async def reset(client):
                     character["status"].append("dead")
                 
                 await save_userinfo(char_user_id["user_id"], user)
+
+    
+            # Check through all the stashes in the list for election stuff
+            # Start at 1 to skip over the public stash
+            stash_id = 1
+            while stash_id < len(ward["stashes"]):
+                stash = ward["stashes"][stash_id]
+                # If there is an ongoing election
+                if stash["election_days_left"] > 0:
+                    stash["election_days_left"] -= 1
+
+                    non_voters = deepcopy(stash["members"])
+
+                    for candidate_id, voter_ids in stash["election"].items():
+                        for voter_id in voter_ids:
+                            voter = await get_dict_by_key_value(non_voters, 'char_id', voter_id)
+                            if voter != None:
+                                non_voters.remove(voter)
+
+                    # If the stash election has come to the end or all members have cast a vote, then set the new owner, set election days to 0, and set election to {} 
+                    if stash["election_days_left"] == 0 or len(non_voters) <= 0:
+                        # Convert the stash["election"] from a candidate list with lists of voters TO a candidate list with numbers of voters
+                        election = {k:len(v) for k, v in stash["election"].items()}
+                        # Get the key(s) for the leading candidate(s)
+                        lead_candidate_ids = [kv[0] for kv in election.items() if kv[1] == max(election.values())]
+
+                        # If there is a tie, then start a runoff election, removing all the candidates who didnt have the max
+                        if len(lead_candidate_ids) > 1:
+                            stash["election_days_left"] = global_info["runoff_election_days_length"]
+                            new_election = {}
+
+                            for candidate_id in lead_candidate_ids:
+                                new_election[candidate_id] = stash["election"][candidate_id]
+
+                            stash["election"] = new_election
+                            
+                            for member in stash["members"]:
+                                await dm(client, member["user_id"], f'A runoff election was called for stash {stash_id} in ward {ward["id"]} since there was a tie between candidates. Votes for the lead candidates remain, {stash["election_days_left"]} days have been given for members to change their votes.')
+                        # Otherwise set the new owner, set the election days to 0, and clear the election
+                        else:
+                            winner_id = int(lead_candidate_ids[0])
+                            winner_member = await get_dict_by_key_value(stash["members"], 'char_id', winner_id)
+                            # If cant find the member then assume the owner is the winner
+                            if winner_member != None:
+                                stash["members"].append(deepcopy(stash["owner"]))
+
+                                stash["owner"] = deepcopy(winner_member)
+                                stash["members"].remove(winner_member)
+
+                            stash["election_days_left"] = 0
+                            stash["election"] = {}
+                
+                # If the stash has enough recall voters then start an election
+                elif len(stash["recall_voters"]) >= global_info["recall_threshold"] * len(stash["members"]):
+                    stash["recall_voters"] = []
+                    stash["election_days_left"] = global_info["election_days_length"]
+                    stash["election"] = {}
+
+                    for member in stash["members"]:
+                        await dm(client, member["user_id"], f'An election has been called for stash {stash_id} in ward {ward["id"]}. Voting will continue for {stash["election_days_left"]} days.')
+
+                stash_id += 1
 
             await save_ward(ward)
 
